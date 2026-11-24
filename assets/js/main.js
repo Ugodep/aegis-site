@@ -57,7 +57,7 @@ const NORM = .225;
 // éclaté vertical de l'acte 2 (m) : coque +0,085 · carte Pi 5 + radiateur +0,025 · châssis -0,035
 const XV = { body12167: .085, body31097: -.035 };
 const ENV_I = .45;   // intensité de l'environnement studio (RoomEnvironment + PMREM) : reflets métalliques sur radiateur, chanfreins, châssis
-const BEAM = { pos: [.098, .0035, -.021], dir: [1, -.06, .2], len: .12, r: .034 };
+const BEAM = { pos: [.098, .0035, 0], dir: [1, -.06, 0], len: .12, r: .034 };
 const parts = {};
 const rings = [];
 let glOK = false;
