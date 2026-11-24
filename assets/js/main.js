@@ -148,8 +148,14 @@ const BASE = { px: 1.4, py: -.05, pz: 0, rx: .55, ry: 3.7, rz: 0, s: .8, ex: 0, 
 const K = (sec, f, o = {}, pin = false) => ({ sec, f, pin, ...BASE, ...o });
 const KEYS = [
   K('#hero', .5, {}),
-  K('#manifeste', .25, { px: 1.0, ry: 2.8, rx: .3, s: .6, v: 0 }),
-  K('#terrain', .9, { v: 0 }),
+  // zoom caméra : « La caméra était déjà là » → plongée sur la face avant / l'optique, faisceau allumé
+  K('#manifeste', .1, { px: 1.0, s: 1.1, rx: .4, ry: 3.5, bm: 1, v: .9 }),
+  K('#manifeste', .55, { px: .75, s: 2.1, rx: .5, ry: 3.35, fw: 1, bm: 1, v: .75 }),
+  K('#manifeste', 1, { px: 1.5, s: .9, rx: .45, ry: 3.2, bm: 0, v: .4 }),
+  // #constat et #terrain : recul en orbite, boîtier sur le côté, tamisé pour laisser respirer les chiffres
+  K('#constat', .5, { px: 1.9, py: .2, s: .55, rx: .4, ry: 2.6, v: .22 }),
+  K('#terrain', .5, { px: -1.9, py: -.1, s: .55, rx: .35, ry: 3.9, v: .22 }),
+  K('#terrain', .95, { px: 1.3, s: .7, rx: .4, ry: 3.6, v: 0 }),
   // 4 temps dans #solution : 01 (0–25 %) plan 3/4 + faisceau · 02 (25–55 %) coque soulevée · 03 (55–80 %) gros plan LED · 04 (80–100 %) coque refermée
   K('#solution', 0, { px: 1.3, s: .95, rx: .35, ry: 3.75, bm: 1 }, true),
   K('#solution', .22, { px: 1.3, s: 1, rx: .4, ry: 3.95, bm: 1 }, true),
@@ -383,7 +389,7 @@ new Set($$('.rvt').map(h => h.parentElement)).forEach(p => ioT.observe(p));
 
 // spotlight + bordure lumineuse : variables CSS mises à jour uniquement pendant le survol
 if (matchMedia('(hover:hover) and (pointer:fine)').matches && !reduced){
-  $$('.fact, .ledger li, .pivot, .case').forEach(el => {
+  $$('.fact, .ledger li, .cost-g>div, .pivot, .stat, .case, .pillars article, .eco-g article, .vision article, .spc').forEach(el => {
     el.classList.add('spot');
     el.addEventListener('pointermove', e => {
       const r = el.getBoundingClientRect();

@@ -522,3 +522,37 @@ body.ready .sticker{opacity:1}
   .cmp-scn button{padding:6px 9px;font-size:9px;white-space:nowrap}
   .cam3d.cmp .cam-alert{top:12%;right:2%;padding:6px 9px;gap:6px}
 }
+
+/* ===== refonte « Apple Bento » : séparateurs fins, cartes verre dépoli, apparitions au scroll ===== */
+.sep{position:relative;z-index:2;display:block;height:0;margin:0;border:0;border-top:1px solid rgba(255,255,255,.08)}
+.rv{opacity:0;transform:translateY(28px) scale(.97);transition:opacity .9s var(--ease),transform .9s var(--ease);transition-delay:var(--d,0s)}
+.rv.in{opacity:1;transform:none}
+.fact,.ledger li,.cost-g>div,.pivot,.stat,.case,.pillars article,.eco-g article,.vision article,.spc,.path,.qas,.roster>ul{
+  background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);border-radius:20px;
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
+.fact,.fact+.fact,.stat,.stat+.stat{padding:22px 24px 24px;border-left:1px solid rgba(255,255,255,.08)}
+.facts,.stats{gap:14px}
+.ledger{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;border:0}
+.ledger li{display:flex;flex-direction:column;align-items:flex-start;gap:14px;padding:28px}
+.ledger li>span{padding-top:0}
+.ledger li>div{min-width:0}
+.cost-g{gap:14px;border-top:0}
+.cost-g>div,.cost-g>div+div{padding:22px 24px 12px;border-left:1px solid rgba(255,255,255,.08)}
+.pivots{display:grid;gap:14px}
+.pivot{padding:26px 28px}
+.pillars,.eco-g,.vision{gap:14px}
+.pillars article,.eco-g article,.vision article{padding:26px 26px 28px}
+.vision article{border-top:1px solid rgba(255,255,255,.08)}
+.case{border-color:rgba(255,255,255,.08)}
+.case:hover{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.04)}
+.specs{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;align-items:start}
+.spc{padding:26px 28px 10px}
+.spc dl{margin-bottom:12px}
+.qas{padding:6px 26px}
+.path{padding:26px 28px;margin-top:14px}
+.roster>ul{padding:6px 26px;margin-bottom:14px}
+.cam3d.cmp{border-radius:20px;overflow:hidden}
+.spot::before,.spot::after{border-radius:inherit}
+@media (max-width:900px){.ledger,.specs{grid-template-columns:1fr}.fact,.fact+.fact{padding:18px 20px}}
+@media (prefers-reduced-motion:reduce){.rv{transition:none}}
+.facts{border-top:0}

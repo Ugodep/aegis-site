@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js"}}</script>
-<link rel="stylesheet" href="assets/css/style.css?v=23">
+<link rel="stylesheet" href="assets/css/style.css?v=24">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"AEGIS Pro Tech","description":"Détection d'EPI par IA embarquée sur les caméras existantes. Privacy by Design.","parentOrganization":{"@type":"CollegeOrUniversity","name":"Faculté Polytechnique de Mons (UMONS)"}}</script>
 </head>
 <body>
@@ -80,9 +80,7 @@
         <a href="#solution" class="btn btn-line btn-lg"><span data-i18n="cta.how">Comment ça marche</span></a>
       </div>
     </div>
-    <div class="hero-r" aria-hidden="true">
-      <div class="sticker"><b data-i18n="st.1">PROTOTYPE FONCTIONNEL</b><span class="mono">F.P.Ms · UMONS</span></div>
-    </div>
+    <div class="hero-r" aria-hidden="true"></div>
   </div>
   <div class="wrap facts">
     <div class="fact rv"><b class="mono" data-count="128939" data-sep>128 939</b><span data-i18n="fact.1">accidents du travail en Belgique en 2024<small>Source : FEDRIS</small></span></div>
@@ -91,10 +89,7 @@
   </div>
 </section>
 
-<div class="tape-band" aria-hidden="true"><div class="tape-track mono">
-  <span data-i18n="tp.1">NOTRE MISSION : ÉRADIQUER CES CHIFFRES</span><i>✕</i><span data-i18n="tp.2">ZÉRO ACCIDENT</span><i>✕</i><span data-i18n="tp.3">PRÉVENTION, PAS SANCTION</span><i>✕</i>
-  <span data-i18n="tp.1b">NOTRE MISSION : ÉRADIQUER CES CHIFFRES</span><i>✕</i><span data-i18n="tp.2b">ZÉRO ACCIDENT</span><i>✕</i><span data-i18n="tp.3b">PRÉVENTION, PAS SANCTION</span><i>✕</i>
-</div></div>
+<hr class="sep" aria-hidden="true">
 
 <!-- MANIFESTE -->
 <section id="manifeste" class="sec manif">
@@ -206,20 +201,20 @@
     </div>
 
     <div class="specs rv">
-      <h3 class="mono" data-i18n="sp.h">Le matériel</h3>
+      <div class="spc"><h3 class="mono" data-i18n="sp.h">Le matériel</h3>
       <dl>
         <div><dt data-i18n="sp.1k">Calcul</dt><dd data-i18n="sp.1v">Raspberry Pi 5 + module de refroidissement ajouté</dd></div>
         <div><dt data-i18n="sp.2k">Vision</dt><dd data-i18n="sp.2v">Caméra à vision infrarouge</dd></div>
         <div><dt data-i18n="sp.3k">Alimentation</dt><dd data-i18n="sp.3v">Splitter PoE : un câble réseau suffit</dd></div>
         <div><dt data-i18n="sp.4k">Boîtier</dt><dd data-i18n="sp.4v">Imprimé en 3D (PLA), fixation murale, composants modulaires</dd></div>
         <div><dt data-i18n="sp.5k">Alerte</dt><dd data-i18n="sp.5v">Signal sonore et lumineux, local et neutre</dd></div>
-      </dl>
-      <h3 class="mono" data-i18n="sw.h">Le logiciel</h3>
+      </dl></div>
+      <div class="spc"><h3 class="mono" data-i18n="sw.h">Le logiciel</h3>
       <dl>
         <div><dt data-i18n="sw.1k">Serveur local</dt><dd data-i18n="sw.1v">Tout tourne dans le boîtier</dd></div>
         <div><dt data-i18n="sw.2k">IA YOLO</dt><dd data-i18n="sw.2v">Traitement de la vidéo, EPI par EPI</dd></div>
         <div><dt data-i18n="sw.3k">Interface web</dt><dd data-i18n="sw.3v">Affichage et stockage des données statistiques</dd></div>
-      </dl>
+      </dl></div>
     </div>
   </div>
 </section>
@@ -253,15 +248,7 @@
       <div class="stat rv"><span class="mono" data-i18n="demo.s4">Images stockées</span><b class="cy">0</b></div>
     </div>
 
-    <div class="real">
-      <h3 class="h3 rv" data-i18n="pr.real.h">Et voici la vraie sortie de notre prototype.</h3>
-      <p class="rv" data-i18n="pr.real.p">Deux captures de notre prototype, sans retouche, sauf le visage, flouté pour cette page.</p>
-      <div class="shots">
-        <figure class="shot rv" data-cursor="Voir"><div class="ph"><img src="assets/img/yolo-avec.jpg?v=9" alt="Sortie de l'IA : personne avec casque et gants détectés, visage flouté" width="940" height="659" loading="lazy"><span class="badge ok mono" data-i18n="pr.b1">AVEC EPI</span></div><figcaption><b data-i18n="pr.1t">Casque et gants reconnus.</b> <span data-i18n="pr.1p">Chaque zone encadrée est un objet détecté, avec son niveau de confiance.</span></figcaption></figure>
-        <figure class="shot rv" data-cursor="Voir"><div class="ph"><img src="assets/img/yolo-sans.jpg?v=9" alt="Sortie de l'IA : personne sans casque ni gants, visage flouté" width="940" height="677" loading="lazy"><span class="badge bad mono" data-i18n="pr.b2">SANS EPI</span></div><figcaption><b data-i18n="pr.2t">Pas de casque, pas de gants.</b> <span data-i18n="pr.2p">C'est ce manque qui déclenche le signal sonore ou lumineux, sur place.</span></figcaption></figure>
-      </div>
-      <p class="aside rv" data-i18n="pr.a">Dans le produit, l'objectif est de ne détecter que des objets (EPI) et des situations, jamais d'identifier une personne.</p>
-    </div>
+    <p class="aside rv" data-i18n="pr.a">Dans le produit, l'objectif est de ne détecter que des objets (EPI) et des situations, jamais d'identifier une personne.</p>
   </div>
 </section>
 
@@ -427,7 +414,7 @@
 
 <!-- CONTACT -->
 <section id="contact" class="sec contact">
-  <div class="tape" aria-hidden="true"></div>
+  <hr class="sep" aria-hidden="true">
   <div class="wrap two">
     <div class="ct-l">
       <p class="kicker mono"><span class="k">→</span> Contact</p>
@@ -454,6 +441,6 @@
 </footer>
 
 <script src="assets/vendor/lenis.min.js"></script>
-<script type="module" src="assets/js/main.js?v=23"></script>
+<script type="module" src="assets/js/main.js?v=24"></script>
 </body>
 </html>
