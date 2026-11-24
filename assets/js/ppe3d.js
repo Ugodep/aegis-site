@@ -14,7 +14,8 @@ const HIDE = ['body69062', 'body935', 'body27961'];
 export function initPPE({ wrap, gl, ov, ui, model }){
   const octx = ov.getContext('2d');
   let renderer, scene, camera, running = false, built = false, failed = false;
-  let W = 960, H = 540, dpr = 1, T = 0, last = 0, on = true;
+  let W = 960, H = 540, dpr = 1, T = 0, last = 0, on = true, onK = 1;   // onK : 0→1, fondu AVEC/SANS AEGIS (~300 ms)
+  const disp = { people: 0, ok: 0, alerts: 0 };   // valeurs affichées, lissées
   let hero = null, cone = null, coneMat = null, rings = [], boxLed = null, boxPos = new THREE.Vector3(-2.7, 2.7, -2.75);
   const workers = [];
   const stats = { people: 0, ok: 0, alerts: 0 };
@@ -236,7 +237,8 @@ export function initPPE({ wrap, gl, ov, ui, model }){
   }
   function drawOverlay(){
     octx.setTransform(dpr, 0, 0, dpr, 0, 0); octx.clearRect(0, 0, W, H);
-    if (!on) return;
+    if (onK < .01) return;
+    octx.globalAlpha = onK;
     const fs = clamp(W / 90, 9, 13), conf = (id, o) => (0.93 + .05 * (.5 + .5 * Math.sin(T * 1.7 + id + o))).toFixed(2);
     workers.forEach(w => {
       const b = bboxOf(w.g); if (b[0] > W || b[0] + b[2] < 0) return;
@@ -265,15 +267,18 @@ export function initPPE({ wrap, gl, ov, ui, model }){
     const cx = tx * 1.1 + Math.sin(T * .16) * .4, cy = 2.15 - ty * .3 + Math.sin(T * .23) * .06;
     camera.position.set(cx, cy + .2, 8.2); camera.lookAt(-.4, 1.35, 0);
     // alerte : cône + anneaux + LED du boîtier
-    const alerting = on && T < alertUntil;
+    onK = clamp(onK + (on ? dt : -dt) / .3, 0, 1);
+    const alerting = T < alertUntil;
     coneMat.color.setHex(alerting ? 0xff5a00 : 0x29b6f6);
-    coneMat.opacity = alerting ? .09 + Math.abs(Math.sin(T * 9)) * .05 : .055 + Math.sin(T * 1.3) * .012;
-    if (boxLed) boxLed.material.emissiveIntensity = alerting ? 1.5 + Math.sin(T * 14) * 1.2 : 0;
-    rings.forEach((r, i) => { const ph = ((T * .9 + i / 3) % 1); r.position.copy(boxPos); r.position.z += .55; r.lookAt(camera.position); r.scale.setScalar(.25 + ph * 1.5); r.material.opacity = alerting ? Math.pow(1 - ph, 1.5) * .85 : 0; });
+    coneMat.opacity = (alerting ? .09 + Math.abs(Math.sin(T * 9)) * .05 : .055 + Math.sin(T * 1.3) * .012) * onK;
+    if (boxLed) boxLed.material.emissiveIntensity = alerting ? (1.5 + Math.sin(T * 14) * 1.2) * onK : 0;
+    rings.forEach((r, i) => { const ph = ((T * .9 + i / 3) % 1); r.position.copy(boxPos); r.position.z += .55; r.lookAt(camera.position); r.scale.setScalar(.25 + ph * 1.5); r.material.opacity = alerting ? Math.pow(1 - ph, 1.5) * .85 * onK : 0; });
     stats.people += dt * 3; stats.ok += dt * 2.6 * (heroStatus === 'missing' ? .66 : 1);
     renderer.render(scene, camera);
     drawOverlay();
-    ui && ui({ people: Math.floor(stats.people), ok: Math.floor(stats.ok), alerts: stats.alerts, alertOn: alerting, fps });
+    const kk = 1 - Math.exp(-dt * 7);
+    disp.people += (stats.people - disp.people) * kk; disp.ok += (stats.ok - disp.ok) * kk; disp.alerts += (stats.alerts - disp.alerts) * kk;
+    ui && ui({ people: Math.floor(disp.people), ok: Math.floor(disp.ok), alerts: Math.round(disp.alerts), alertOn: alerting && on, fps });
   }
 
   return {
@@ -286,6 +291,6 @@ export function initPPE({ wrap, gl, ov, ui, model }){
       running = true; last = performance.now();
     },
     stop(){ running = false; },
-    setOn(v){ on = v; if (!v) alertUntil = 0; }
+    setOn(v){ on = v; }
   };
 }

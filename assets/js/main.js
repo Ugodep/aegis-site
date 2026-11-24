@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from '../vendor/three/addons/loaders/GLTFLoader.js';
 import { toCreasedNormals } from '../vendor/three/addons/utils/BufferGeometryUtils.js';
 import { RoomEnvironment } from '../vendor/three/addons/environments/RoomEnvironment.js';
-import { initPPE } from './ppe3d.js?v=15';
-import { initI18n, getLang, hud as hudText, msg, onLang } from './i18n.js?v=13';
+import { initPPE } from './ppe3d.js?v=16';
+import { initI18n, getLang, hud as hudText, msg, onLang, fmtNum } from './i18n.js?v=16';
 
 /* ------------------------------------------------------------------ */
 const HIDE_PARTS = ['body69062', 'body935', 'body27961'];   // pièces du CAD masquées (splitter PoE hors position, optique, plaque)
@@ -191,9 +191,31 @@ function updateTags(vis){
 }
 
 const TAU = Math.PI * 2;
-let userEx = 0, stageW = 0, yawO = 0, yawV = 0, pitO = 0, dragging = false, resetting = false;
+let userEx = 0, stageW = 0, yawO = 0, yawV = 0, pitO = 0, dragging = false;
 let ready = false, lastT = performance.now(), time = 0;
+
+// Transitions des boutons « Vue éclatée / Assembler / Recentrer » : power3.out sur 650 ms.
+// Toute prise en main manuelle (souris, doigt, clavier) annule l'interpolation automatique.
+const TW = 650, ease3 = t => 1 - Math.pow(1 - t, 3);
+let exAnim = null, rstAnim = null;
+const cancelAnims = () => { exAnim = rstAnim = null; };
+function stepAnims(dt){
+  if (exAnim){
+    exAnim.t += dt * 1000;
+    const k = Math.min(1, exAnim.t / TW);
+    userEx = exAnim.from + (exAnim.to - exAnim.from) * ease3(k);
+    if (k >= 1) exAnim = null;
+  }
+  if (rstAnim){
+    rstAnim.t += dt * 1000;
+    const k = Math.min(1, rstAnim.t / TW), e = ease3(k);
+    yawO = rstAnim.y0 + (rstAnim.y1 - rstAnim.y0) * e; pitO = rstAnim.p0 * (1 - e); yawV = 0;
+    if (k >= 1) rstAnim = null;
+  }
+}
+
 function renderGL(dt, y){
+  stepAnims(dt);
   targetAt(y, tg);
   tg.ex = Math.max(tg.ex, userEx * stageW); tg.sc = Math.max(tg.sc, userEx * stageW * .7);
   const k = SNAP ? 1 : 1 - Math.exp(-dt * (ready ? 6.5 : 2.4));
@@ -208,7 +230,7 @@ function renderGL(dt, y){
   if (vis < .01 || !glOK){ tagEls.forEach(el => { el.style.opacity = 0; }); return; }
 
   rig.position.set(px, py + Math.sin(time * .9) * .035, st.pz);
-  if (!dragging){ yawV *= .94; yawO += yawV; if (stageW < .05 || resetting){ const tgt = Math.round(yawO / TAU) * TAU; yawO += (tgt - yawO) * .08; pitO += (0 - pitO) * .08; if (Math.abs(yawO - tgt) < .002 && Math.abs(pitO) < .002) resetting = false; } }
+  if (!dragging && !rstAnim){ yawV *= .94; yawO += yawV; if (stageW < .05){ const tgt = Math.round(yawO / TAU) * TAU; yawO += (tgt - yawO) * .08; pitO += (0 - pitO) * .08; } }
   rig.rotation.set(st.rx + pitO + smy * .12, st.ry + yawO + Math.sin(time * .45) * .1 + smx * .28, st.rz);
   rig.scale.setScalar(S0 * s);
 
@@ -294,18 +316,20 @@ function updateUI(y){
 onLang(() => { if (curStep >= 0) hudT.textContent = hudText(curStep); });
 
 /* ============================ révélations / compteurs ============================ */
-function fmt(n){ return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+const countText = (el, v) => (el.dataset.pre || '') + ('sep' in el.dataset ? fmtNum(v) : Math.round(v)) + (el.dataset.suf || '');
 function countUp(el){
   if (el._done) return; el._done = true;
-  const end = +el.dataset.count, pre = el.dataset.pre || '', suf = el.dataset.suf || '', sep = 'sep' in el.dataset;
-  if (reduced || SNAP){ el.textContent = pre + (sep ? fmt(end) : end) + suf; return; }
+  const end = +el.dataset.count;
+  if (reduced || SNAP){ el.textContent = countText(el, end); return; }
   const t0 = performance.now(), D = 1500;
   (function f(now){
-    const t = clamp((now - t0) / D, 0, 1), e = 1 - Math.pow(1 - t, 4), v = end * e;
-    el.textContent = pre + (sep ? fmt(v) : Math.round(v)) + suf;
+    const t = clamp((now - t0) / D, 0, 1), e = 1 - Math.pow(1 - t, 4);
+    el.textContent = countText(el, end * e);
     if (t < 1) requestAnimationFrame(f);
   })(t0);
 }
+// changement de langue : les nombres déjà affichés prennent le bon séparateur (128 939 ↔ 128,939)
+onLang(() => $$('[data-count]').forEach(el => { el.textContent = countText(el, +el.dataset.count); }));
 const io = new IntersectionObserver(es => es.forEach(e => {
   if (!e.isIntersecting) return;
   e.target.classList.add('in'); io.unobserve(e.target);
@@ -316,6 +340,19 @@ $$('.rv').forEach(el => {
   el.style.setProperty('--d', (Math.min(sibs.indexOf(el), 4) * .07).toFixed(2) + 's');
   io.observe(el);
 });
+$$('.rvt').forEach(el => io.observe(el));   // titres : révélation par masque vertical
+
+// spotlight + bordure lumineuse : variables CSS mises à jour uniquement pendant le survol
+if (matchMedia('(hover:hover) and (pointer:fine)').matches && !reduced){
+  $$('.fact, .ledger li, .pivot, .case').forEach(el => {
+    el.classList.add('spot');
+    el.addEventListener('pointermove', e => {
+      const r = el.getBoundingClientRect();
+      el.style.setProperty('--mx', (e.clientX - r.left).toFixed(0) + 'px');
+      el.style.setProperty('--my', (e.clientY - r.top).toFixed(0) + 'px');
+    }, { passive: true });
+  });
+}
 
 $('#burger').addEventListener('click', () => {
   const on = document.body.classList.toggle('menu');
@@ -338,7 +375,7 @@ form.addEventListener('submit', e => {
 /* ============================ boîtier interactif ============================ */
 {
   let last = null;
-  stageEl.addEventListener('pointerdown', e => { if (e.target.closest('button')) return; dragging = true; resetting = false; last = { x: e.clientX, y: e.clientY, touch: e.pointerType === 'touch' }; try { stageEl.setPointerCapture(e.pointerId); } catch (_) {} });
+  stageEl.addEventListener('pointerdown', e => { if (e.target.closest('button')) return; dragging = true; cancelAnims(); exBtn.classList.toggle('on', userEx > .5); last ={ x: e.clientX, y: e.clientY, touch: e.pointerType === 'touch' }; try { stageEl.setPointerCapture(e.pointerId); } catch (_) {} });
   stageEl.addEventListener('pointermove', e => {
     if (!dragging || !last) return;
     const dx = e.clientX - last.x, dy = e.clientY - last.y; last.x = e.clientX; last.y = e.clientY;
@@ -349,12 +386,22 @@ form.addEventListener('submit', e => {
   const up = () => { dragging = false; last = null; };
   stageEl.addEventListener('pointerup', up); stageEl.addEventListener('pointercancel', up);
   stageEl.addEventListener('keydown', e => {
-    if (e.key === 'ArrowLeft'){ yawV -= .06; e.preventDefault(); }
-    if (e.key === 'ArrowRight'){ yawV += .06; e.preventDefault(); }
+    if (e.key === 'ArrowLeft'){ rstAnim = null; yawV -= .06; e.preventDefault(); }
+    if (e.key === 'ArrowRight'){ rstAnim = null; yawV += .06; e.preventDefault(); }
     if ((e.key === 'Enter' || e.key === ' ') && e.target === stageEl){ exBtn.click(); e.preventDefault(); }
   });
-  exBtn.addEventListener('click', () => { userEx = userEx ? 0 : 1; exBtn.classList.toggle('on', !!userEx); });
-  $('#rstBtn').addEventListener('click', () => { resetting = true; yawV = 0; });
+  exBtn.addEventListener('click', () => {
+    const to = (exAnim ? exAnim.to : userEx) > .5 ? 0 : 1;
+    exAnim = reduced ? null : { t: 0, from: userEx, to };
+    if (reduced) userEx = to;
+    exBtn.classList.toggle('on', !!to);
+  });
+  $('#rstBtn').addEventListener('click', () => {
+    yawV = 0;
+    const y1 = Math.round(yawO / TAU) * TAU;
+    if (reduced){ yawO = y1; pitO = 0; return; }
+    rstAnim = { t: 0, y0: yawO, y1, p0: pitO };
+  });
 }
 
 // texte « scrub » : les mots s'allument au scroll

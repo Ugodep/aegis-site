@@ -102,6 +102,8 @@ export const getLang = () => lang;
 export const hud = i => HUD[lang][i];
 export const msg = k => MSG[lang][k];
 export const onLang = fn => subs.push(fn);
+// grands nombres selon la langue : « 128 939 » (FR, espace insécable) / « 128,939 » (EN)
+export const fmtNum = n => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
 
 export function initI18n(){
   const els = [...document.querySelectorAll('[data-i18n]')];

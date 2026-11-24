@@ -448,3 +448,20 @@ body.ready .sticker{opacity:1}
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
   .rv{opacity:1;transform:none}.ln>span{transform:none}
 }
+
+/* ===== finitions : révélation des titres, spotlight, bordure lumineuse ===== */
+.rvt{opacity:0;transform:translateY(.4em);clip-path:inset(0 -2% 105% -2%);
+  transition:clip-path 1.1s cubic-bezier(.16,1,.3,1),transform 1.1s cubic-bezier(.16,1,.3,1),opacity .45s ease}
+.rvt.in{opacity:1;transform:none;clip-path:inset(-6% -2% -12% -2%)}
+
+@media (hover:hover) and (pointer:fine){
+  .spot{position:relative}
+  .spot::before,.spot::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .35s var(--ease)}
+  .spot::before{background:radial-gradient(380px circle at var(--mx,50%) var(--my,50%),rgba(255,90,0,.075),transparent 62%)}
+  .spot::after{border:1px solid transparent;
+    background:radial-gradient(200px circle at var(--mx,50%) var(--my,50%),rgba(255,122,48,.7),transparent 70%) border-box;
+    -webkit-mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
+    mask:linear-gradient(#000 0 0) padding-box exclude,linear-gradient(#000 0 0)}
+  .spot:hover::before,.spot:hover::after{opacity:1}
+}
+@media (prefers-reduced-motion:reduce){.rvt{opacity:1;transform:none;clip-path:none}}
