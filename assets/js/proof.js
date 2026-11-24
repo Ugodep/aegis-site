@@ -26,7 +26,7 @@ const CYCLE = 7;     // durée d'un cycle d'analyse (s)
 export function initProof({ wrap, img, ov, ui, getLang = () => 'fr' }){
   const ctx = ov.getContext('2d');
   let running = false, on = true, onK = 1, scnKey = 'missing', scn = SCN.missing;
-  let W = 960, H = 540, dpr = 1, T = 0, last = 0, c0 = 0, prevC = 99, fpsN = 0, fpsT = 0, fps = 60, alertSent = false;
+  let W = 960, H = 540, dpr = 1, T = 0, last = 0, c0 = 0, fpsN = 0, fpsT = 0, fps = 60;
   const stats = { people: 0, ok: 0, alerts: 0 };
   const disp = { people: 0, ok: 0, alerts: 0 };
 
@@ -37,7 +37,7 @@ export function initProof({ wrap, img, ov, ui, getLang = () => 'fr' }){
   }
   new ResizeObserver(resize).observe(wrap); resize();
 
-  function restart(){ c0 = T; prevC = 99; alertSent = false; }
+  function restart(){ c0 = T; stats.people = stats.ok = stats.alerts = 0; }
   function setScenario(k){
     if (!SCN[k] || k === scnKey) return;
     scnKey = k; scn = SCN[k];
@@ -116,11 +116,10 @@ export function initProof({ wrap, img, ov, ui, getLang = () => 'fr' }){
     fpsN++; fpsT += dt; if (fpsT > .6){ fps = Math.round(fpsN / fpsT); fpsN = 0; fpsT = 0; }
     onK = clamp(onK + (on ? dt : -dt) / .3, 0, 1);
     const c = (T - c0) % CYCLE;
-    if (on){
-      if (c < prevC){ stats.people++; if (scn.ok) stats.ok++; alertSent = false; }   // nouveau cycle : une personne analysée
-      if (!scn.ok && !alertSent && c > 1.5){ alertSent = true; stats.alerts++; }
-    }
-    prevC = c;
+    // les compteurs décrivent la scène à l'image : une seule personne, jamais recomptée à chaque cycle d'animation
+    stats.people = on && (stats.people || c > .5) ? 1 : 0;
+    stats.ok = on && scn.ok && (stats.ok || c > 1.3) ? 1 : 0;
+    stats.alerts = on && !scn.ok && (stats.alerts || c > 1.5) ? 1 : 0;
     draw(c);
     const k = 1 - Math.exp(-dt * 7);
     disp.people += (stats.people - disp.people) * k; disp.ok += (stats.ok - disp.ok) * k; disp.alerts += (stats.alerts - disp.alerts) * k;

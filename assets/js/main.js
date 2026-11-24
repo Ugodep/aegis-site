@@ -7,7 +7,7 @@ import { RenderPass } from '../vendor/three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from '../vendor/three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from '../vendor/three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from '../vendor/three/addons/postprocessing/ShaderPass.js';
-import { initProof } from './proof.js?v=23';
+import { initProof } from './proof.js?v=24';
 import { initI18n, getLang, msg, onLang, fmtNum } from './i18n.js?v=20';
 
 /* ------------------------------------------------------------------ */
