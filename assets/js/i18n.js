@@ -1,5 +1,18 @@
 // FR (défaut, lu depuis le HTML) / EN
 const EN = {
+  'nav.vision':'Vision','nav.archi':'Architecture','nav.preuve':'Proof','nav.boitier':'The device','nav.dossier':'Business file',
+  'a0.h':'AEGIS PRO TECH','a0.p':'Embedded AI that protects without watching.','a0.b':'Explore ↓',
+  'a1.h':'Edge AI Vision','a1.p':'Plug into your existing cameras. PPE detection in 30 ms.',
+  'a2.h':'Local Architecture','a2.1':'Raspberry Pi 5','a2.2':'0 ms Cloud','a2.3':'Plug &amp; Play',
+  'a3.h':'Zero Surveillance','a3.p':'No image recorded. Kind, local alert.',
+  'a4.h':'Designed at UMONS','a4.p':'Spin it: this is our real CAD model.',
+  'a4.m1':'Raspberry Pi 5 + cooling','a4.m2':'Infrared vision camera','a4.m3':'PoE splitter: a single cable','a4.m4':'3D-printed case (PLA)',
+  'a4.s1':'Local server inside the box','a4.s2':'YOLO AI, PPE by PPE','a4.s3':'Web statistics interface',
+  'd.k':'Business file','d.h':'The B2B file, on one page.',
+  'd.n1':'work accidents per year in Belgium<small>Source: FEDRIS 2024</small>','d.n2':'average cost per serious accident','d.n3':'industrial pack of 10 devices',
+  'd.roi':'Return on investment','d.r1':'Cost of inaction · per year','d.r2':'AEGIS investment · pack of 10 devices','d.rn':'AEGIS team estimate, first year: a single avoided accident covers the subscription.',
+  'd.eth':'Ethics','d.eth1':'100% GDPR compliant','d.use':'Use cases','d.use1':'Factories &amp; construction sites',
+  'd.team':'Team · F.P.Ms UMONS','d.faq':'Questions','d.ct':'Request a demo','ct.p2':'A demonstration or a pilot test on your site.',
   'mega.1':'PLUG &amp; PLAY','mega.2':'EDGE AI · 30 FPS','mega.3':'LOCAL ALERT','mega.4':'ZERO DATA',
   'g.badge':'FACE BLURRED · 0 ms','g.b0':'HSE feed · anonymous','g.b1':'Zone B · 10:15','g.b2':'Missing helmet','g.b3':'Local signal on','g.b4':'0 images stored',
   'tag.shell':'Shell · 3D printed (PLA)','tag.board':'Raspberry Pi 5 + cooling','tag.base':'Vented base plate',
