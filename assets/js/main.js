@@ -57,7 +57,7 @@ const NORM = .225;
 // éclaté vertical de l'acte 2 (m) : coque +0,085 · carte Pi 5 + radiateur +0,025 · châssis -0,035
 const XV = { body12167: .085, body31097: -.035 };
 const ENV_I = .45;   // intensité de l'environnement studio (RoomEnvironment + PMREM) : reflets métalliques sur radiateur, chanfreins, châssis
-const BEAM = { pos: [.098, -.0015, -.021], dir: [1, -.14, .22], len: .12, r: .034 };
+const BEAM = { pos: [.098, .0035, -.021], dir: [1, -.06, .2], len: .12, r: .034 };
 const parts = {};
 const rings = [];
 let glOK = false;
@@ -313,19 +313,6 @@ function updatePins(vis){
   });
 }
 
-const reticle = $('#reticle');
-let retOn = false;
-function updateReticle(vis){
-  const k = vis > .01 ? clamp((st.lz - .25) / .45, 0, 1) * vis : 0;
-  if (k < .01){ if (retOn){ reticle.style.opacity = 0; retOn = false; } return; }
-  retOn = true;
-  _v.set(...BEAM.pos).applyMatrix4(rig.matrixWorld).project(camera);
-  const x = (_v.x * .5 + .5) * innerWidth, y = (-_v.y * .5 + .5) * innerHeight;
-  reticle.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`;
-  reticle.style.opacity = k.toFixed(2);
-  reticle.classList.toggle('lock', st.lz > .78);
-}
-
 const TAU = Math.PI * 2;
 let userEx = 0, stageW = 0, yawO = 0, yawV = 0, pitO = 0, dragging = false;
 let ready = false, lastT = performance.now(), time = 0;
@@ -364,7 +351,7 @@ function renderGL(dt, y){
   const px = st.px, py = st.py, s = st.s;
   const vis = ready ? st.v : 0;
   canvas.style.opacity = vis.toFixed(3);
-  if (vis < .01 || !glOK){ updatePins(0); updateReticle(0); return; }
+  if (vis < .01 || !glOK){ updatePins(0); return; }
 
   const bx = px, by = py + Math.sin(time * 1.1) * .004 * S0 * s;   // respiration ±0,004 m
   rig.position.set(bx, by, st.pz);
@@ -424,7 +411,7 @@ function renderGL(dt, y){
   camera.lookAt(0, 0, 0);
   scene.updateMatrixWorld(true);
   if (composer && useBloom) renderBloom(); else renderer.render(scene, camera);
-  updatePins(vis); updateReticle(vis);
+  updatePins(vis);
 }
 
 /* ============================ UI : état du scroll ============================ */
