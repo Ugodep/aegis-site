@@ -42,9 +42,12 @@ $$('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
 
 /* ============================ SCÈNE 3D ============================ */
 const canvas = $('#gl');
-let renderer, scene, camera, rig, model, beam, halo, dust;
+let renderer, scene, camera, rig, model, beam, halo, dust, beamPts, beamSeed;
 // faisceau optique : position (repère du GLB, mètres), direction, longueur, rayon. Réglé sur la lentille sous la visière.
-const BEAM = { pos: [.098, -.004, -.04], dir: [1, -.14, .22], len: .12, r: .034 };
+// Le modèle est normalisé au chargement (centré en 0,0,0 ; plus grande dimension = NORM mètres) : ces valeurs sont donc relatives
+// au centre de l'objet. Si le futur boitier.glb a l'optique ailleurs, il suffit d'ajuster BEAM.pos / BEAM.dir.
+const NORM = .225;
+const BEAM = { pos: [.098, -.0015, -.021], dir: [1, -.14, .22], len: .12, r: .034 };
 const parts = {};
 const rings = [];
 let glOK = false;
@@ -77,7 +80,16 @@ function buildScene(gltf){
     parts[o.name] = o;
   });
   HIDE_PARTS.forEach(n => { if (parts[n]) parts[n].visible = false; });
-  model.position.set(0, 0, .02);
+  // normalisation : boîte englobante des pièces visibles → centrée sur l'origine, mise à l'échelle standard (NORM).
+  // Cadrages et animations restent valides quand boitier.glb est remplacé par un autre modèle CAO.
+  model.position.set(0, 0, 0); model.scale.setScalar(1); model.updateMatrixWorld(true);
+  const box = new THREE.Box3();
+  Object.values(parts).forEach(m => { if (m.visible) box.union(new THREE.Box3().setFromObject(m)); });
+  if (!box.isEmpty()){
+    const size = box.getSize(new THREE.Vector3()), ctr = box.getCenter(new THREE.Vector3());
+    const k = NORM / Math.max(size.x, size.y, size.z, 1e-6);
+    model.scale.setScalar(k); model.position.copy(ctr).multiplyScalar(-k);
+  }
   rig.add(model);
 }
 
@@ -89,11 +101,11 @@ function initGL(){
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.15;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.setClearColor(0x030406, 1);
+  renderer.setClearColor(0x000000, 1);
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x030406);
-  scene.fog = new THREE.FogExp2(0x030406, .042);   // brouillard atmosphérique : la profondeur se fond dans le noir
+  scene.background = new THREE.Color(0x000000);
+  scene.fog = new THREE.FogExp2(0x000000, .042);   // brouillard atmosphérique : la profondeur se fond dans le noir
   camera = new THREE.PerspectiveCamera(32, 1, .1, 60);
   camera.position.set(0, 0, 6.5);
 
@@ -115,15 +127,20 @@ function initGL(){
   rig = new THREE.Group(); scene.add(rig);
 
   // faisceau optique (étape 1) : cône volumétrique discret devant la lentille, en orange AEGIS
-  beam = new THREE.Mesh(new THREE.ConeGeometry(BEAM.r, BEAM.len, 40, 1, true), new THREE.ShaderMaterial({
+  beam = new THREE.Mesh(new THREE.ConeGeometry(BEAM.r, BEAM.len, 48, 1, true), new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
     uniforms: { u: { value: 0 } },
-    vertexShader: 'varying float vY;void main(){vY=position.y;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-    fragmentShader: 'varying float vY;uniform float u;void main(){float t=clamp((vY/' + BEAM.len.toFixed(4) + ')+.5,0.,1.);gl_FragColor=vec4(1.,.35,0.,u*.26*(1.-t)*(1.-t));}'
+    vertexShader: 'varying float vY;varying float vF;void main(){vY=position.y;vec4 mv=modelViewMatrix*vec4(position,1.);vec3 n=normalize(normalMatrix*normal);vF=abs(dot(n,normalize(-mv.xyz)));gl_Position=projectionMatrix*mv;}',
+    fragmentShader: 'varying float vY;varying float vF;uniform float u;void main(){float t=clamp((vY/' + BEAM.len.toFixed(4) + ')+.5,0.,1.);float a=u*.2*pow(1.-t,1.7)*smoothstep(0.,.9,vF);gl_FragColor=vec4(1.,.42,.08,a);}'
   }));
   beam.geometry.translate(0, -BEAM.len / 2, 0);            // sommet à l'origine, ouverture vers -Y
   beam.position.set(...BEAM.pos); beam.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), new THREE.Vector3(...BEAM.dir).normalize());
   beam.visible = false; rig.add(beam);
+  // micro-particules qui glissent le long du faisceau
+  const BN = 70; beamSeed = Float32Array.from({ length: BN * 3 }, () => Math.random());
+  const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(BN * 3), 3));
+  beamPts = new THREE.Points(bg, new THREE.PointsMaterial({ color: 0xffb27a, size: .03, transparent: true, opacity: .8, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+  beamPts.frustumCulled = false; beam.add(beamPts);
 
   // anneaux d'alerte (étape 3)
   for (let i = 0; i < 3; i++){
@@ -139,6 +156,7 @@ function initGL(){
   const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   dust = new THREE.Points(pg, new THREE.PointsMaterial({ map: new THREE.CanvasTexture(dc), color: 0x9fd8ff, size: .07, transparent: true, opacity: .5, depthWrite: false, blending: THREE.AdditiveBlending }));
   scene.add(dust);
+  beamPts.material.map = dust.material.map; beamPts.material.needsUpdate = true;
   resizeGL();
   return true;
 }
@@ -154,33 +172,34 @@ function resizeGL(){
 /* ============================ KEYFRAMES (scroll → 3D) ============================ */
 const S0 = 11;
 // lz = plongée dans la lentille · fh = macro sur le radiateur · fw = cadrage sur la LED · ld = LED allumée · lf = coque soulevée · bm = faisceau · al = onde d'alerte
-const BASE = { px: 0, py: 0, pz: 0, rx: .5, ry: 3.7, rz: 0, s: 1, ex: 0, al: 0, sc: 0, v: 1, m: 1, mv: 1, lf: 0, fw: 0, bm: 0, my: 0, lz: 0, fh: 0, ld: 0 };
-const K = (sec, f, o = {}) => ({ sec, f, ...BASE, ...o });
+const BASE = { px: 0, py: 0, pz: 0, rx: .5, ry: 3.7, rz: 0, s: 1, ex: 0, al: 0, sc: 0, v: 1, lf: 0, fw: 0, bm: 0, lz: 0, fh: 0, ld: 0 };
+// K(section, fraction, desktop, mobile) : le dernier argument ne surcharge que le mobile (< 900 px)
+const K = (sec, f, o = {}, mob = {}) => ({ sec, f, ...BASE, ...o, mob });
+// Composition : le boîtier n'est jamais derrière le texte (texte à gauche → boîtier à droite, etc.).
 const KEYS = [
-  // Acte 0 : le boîtier flotte au centre, LED allumée
-  K('#hero', .5, { py: .42, s: 1.12, rx: .42, ry: 3.78, ld: 1, m: .25 }),
-  // Acte 1 : la caméra accélère et plonge dans la lentille, le faisceau s'allume
-  K('#vision', .3, { px: .55, py: .1, s: 1.3, rx: .22, ry: 4.35, bm: 1, ld: 1 }),
-  K('#vision', .62, { lz: 1, s: 2.6, pz: 1.6, rx: .12, ry: 4.71, bm: 1, ld: 1 }),
-  K('#vision', .9, { lz: 1, s: 6, pz: 5.3, rx: .12, ry: 4.71, bm: 1, ld: 1 }),
-  K('#architecture', .08, { lz: 1, s: 9, pz: 6.3, rx: .12, ry: 4.71, bm: 1, ld: 1, v: 0 }),
-  // Acte 2 : la caméra ressort dans le boîtier éclaté, macro sur le radiateur et le Pi 5
-  K('#architecture', .42, { fh: 1, lf: 1, ex: .35, s: 2.5, rx: .3, ry: 3.45, v: 1, m: .5 }),
-  K('#architecture', .68, { fh: 1, lf: 1, ex: .35, s: 2.7, rx: .34, ry: 3.15, v: 1, m: .5 }),
-  // Acte 3 : la coque se referme, la LED pulse, le boîtier glisse à gauche
-  K('#preuve', .5, { px: -1.4, py: .15, s: .85, rx: .45, ry: 3.65, al: 1, ld: 1, lf: 0, m: .8 }),
-  // Acte 4 : inspection libre au centre
-  K('#boitier', .5, { px: 0, py: 0, s: .95, rx: .6, ry: 3.3, m: .12 }),
-  K('#dossier', .08, { px: 0, py: 0, s: .95, rx: .6, ry: 3.3, m: .12, v: 0 }),
+  // Acte 0 : texte en haut, boîtier 3/4 dans la moitié basse
+  K('#hero', .5, { py: -1.0, s: 1.0, rx: .42, ry: 3.78, ld: 1 }, { py: -.95, s: .66 }),
+  // Acte 1 : plan rasant le long de la visière et de la lentille (boîtier à droite), puis glissement vers l'ouverture
+  K('#vision', .25, { px: .9, py: -.1, s: 1.3, rx: .3, ry: 4.25, bm: 1, ld: 1 }, { px: 0, py: .7, s: .75 }),
+  K('#vision', .55, { lz: .85, px: 1.1, py: -.1, s: 2.8, rx: .1, ry: 4.6, bm: 1, ld: 1 }, { px: 0, py: .8, s: 1.5 }),
+  K('#vision', .85, { fh: 1, px: 1.2, py: 0, s: 2.4, rx: .75, ry: 3.6, ld: 1 }, { px: 0, py: .8, s: 1.2 }),
+  // Acte 2 : boîtier éclaté dans la moitié droite, texte à gauche
+  K('#architecture', .5, { fh: 1, lf: 1, ex: .35, px: 1.45, py: -.05, s: 2.0, rx: .3, ry: 3.45 }, { px: 0, py: .85, s: 1.0 }),
+  K('#architecture', .78, { fh: 1, lf: 1, ex: .35, px: 1.45, py: -.05, s: 2.0, rx: .34, ry: 3.15 }, { px: 0, py: .85, s: 1.0 }),
+  // Acte 3 : petit, quart supérieur gauche, LED qui pulse
+  K('#preuve', .5, { px: -1.5, py: .8, s: .5, rx: .45, ry: 3.65, al: 1, ld: 1 }, { px: 0, py: 1.25, s: .42 }),
+  // Acte 4 : au centre de la moitié haute, manipulable à 360°
+  K('#boitier', .5, { px: 0, py: .78, s: .82, rx: .6, ry: 3.3 }, { py: 1.0, s: .6 }),
+  K('#dossier', .08, { px: 0, py: .78, s: .82, rx: .6, ry: 3.3, v: 0 }, { py: 1.0, s: .6 }),
 ];
-const PROPS = ['px', 'py', 'pz', 'rx', 'ry', 'rz', 's', 'ex', 'al', 'sc', 'v', 'm', 'mv', 'lf', 'fw', 'bm', 'my', 'lz', 'fh', 'ld'];
+const PROPS = ['px', 'py', 'pz', 'rx', 'ry', 'rz', 's', 'ex', 'al', 'sc', 'v', 'lf', 'fw', 'bm', 'lz', 'fh', 'ld'];
 let anchors = [];
 function computeAnchors(){
   const vh = innerHeight, sy = window.scrollY;
   anchors = KEYS.map(k => {
     const el = $(k.sec); if (!el) return null;
     const top = el.getBoundingClientRect().top + sy, h = el.offsetHeight;
-    return { ...k, y: top + k.f * h - vh * .5 };
+    return { ...k, ...(isMobile() ? k.mob : {}), y: top + k.f * h - vh * .5 };
   }).filter(Boolean).sort((a, b) => a.y - b.y);
 }
 function targetAt(y, out){
@@ -231,13 +250,12 @@ function renderGL(dt, y){
   tg.ex = Math.max(tg.ex, userEx * stageW);
   const k = SNAP ? 1 : 1 - Math.exp(-dt * (ready ? 6.5 : 2.4));
   PROPS.forEach(p => st[p] += (tg[p] - st[p]) * k);
-  if (DBG){ const [a, b, c, d, e, f = 0, g = 0, h = 0, i = 0] = DBG; Object.assign(st, { px: a, py: b, rx: c, ry: d, s: e, lf: f, fw: g, bm: h, al: i, v: 1, m: 0, ex: 0 }); }
+  if (DBG){ const [a, b, c, d, e, f = 0, g = 0, h = 0, i = 0] = DBG; Object.assign(st, { px: a, py: b, rx: c, ry: d, s: e, lf: f, fw: g, bm: h, al: i, v: 1, ex: 0 }); }
 
   const mob = isMobile();
   smx += (mx - smx) * (1 - Math.exp(-dt * 4)); smy += (my - smy) * (1 - Math.exp(-dt * 4));
-  const mw = mob ? st.m : 0;
-  const px = st.px * (1 - .88 * mw), py = st.py + (.95 + st.my) * mw, s = st.s * (1 - .48 * mw);
-  const vis = ready ? st.v * (mob ? st.mv : 1) : 0;
+  const px = st.px, py = st.py, s = st.s;
+  const vis = ready ? st.v : 0;
   canvas.style.opacity = vis.toFixed(3);
   if (vis < .01 || !glOK) return;
 
@@ -266,6 +284,14 @@ function renderGL(dt, y){
   halo.position.x = rig.position.x * .7; halo.position.y = rig.position.y * .7;
   dust.rotation.y = time * .02; dust.position.y = (y * .0007) % 5; dust.position.z = st.pz * .5;
   // faisceau optique (étape 1)
+  if (st.bm > .01){
+    const pa = beamPts.geometry.attributes.position, L = BEAM.len, R = BEAM.r;
+    for (let i = 0; i < pa.count; i++){
+      const t = (beamSeed[i * 3] + time * (.12 + beamSeed[i * 3 + 1] * .12)) % 1, a = beamSeed[i * 3 + 2] * 6.283, r = R * t * Math.sqrt(beamSeed[i * 3 + 1]);
+      pa.setXYZ(i, Math.cos(a) * r, -t * L, Math.sin(a) * r);
+    }
+    pa.needsUpdate = true; beamPts.material.opacity = .85 * st.bm;
+  }
   beam.visible = st.bm > .01; beam.material.uniforms.u.value = st.bm * (.75 + Math.sin(time * 1.6) * .15);
   // onde circulaire qui part de la LED
   if (led) { _v.copy(led.userData.c); led.localToWorld(_v); }
@@ -304,7 +330,7 @@ function updateUI(y){
   const vh = innerHeight, doc = M.doc;
   nav.classList.toggle('sc', y > 30);
   prog.style.transform = `scaleX(${doc > 0 ? clamp(y / doc, 0, 1) : 0})`;
-  let a = 0; M.secTops.forEach((t, i) => { if (t - y <= vh * .45) a = i; });
+  let a = 0; M.secTops.forEach((t, i) => { if (t - y <= vh * .5) a = i; });
   if (a !== activeSec){
     activeSec = a;
     const nid = a === 0 ? null : '#' + SEC_IDS[a];
@@ -386,7 +412,7 @@ form.addEventListener('submit', e => {
     const dx = e.clientX - last.x, dy = e.clientY - last.y; last.x = e.clientX; last.y = e.clientY;
     yawO += dx * .009; yawV = dx * .009;
     if (!last.touch) pitO = clamp(pitO + dy * .005, -.9, .9);
-    $('.stage-hint').style.opacity = 0;
+    $('.drag-badge').style.opacity = 0;
   });
   const up = () => { dragging = false; last = null; };
   stageEl.addEventListener('pointerup', up); stageEl.addEventListener('pointercancel', up);
@@ -424,10 +450,12 @@ form.addEventListener('submit', e => {
   $$('#seg button').forEach(b => b.addEventListener('click', () => {
     const onMode = b.dataset.m === '1';
     $$('#seg button').forEach(x => x.classList.toggle('on', x === b));
+    $('#seg').dataset.v = onMode ? 0 : 1;
     wrap.classList.toggle('off', !onMode); proof.setOn(onMode);
   }));
   $$('#cmpScn button').forEach(b => b.addEventListener('click', () => {
     $$('#cmpScn button').forEach(x => x.classList.toggle('on', x === b));
+    $('#cmpScn').dataset.v = b.dataset.s === 'equipped' ? 1 : 0;
     proof.setScenario(b.dataset.s);
   }));
 }

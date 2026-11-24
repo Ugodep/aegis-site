@@ -1,10 +1,10 @@
 // FR (défaut, lu depuis le HTML) / EN
 const EN = {
   'nav.vision':'Vision','nav.archi':'Architecture','nav.preuve':'Proof','nav.boitier':'The device','nav.dossier':'Business file',
-  'a0.h':'AEGIS PRO TECH','a0.p':'Embedded AI that protects without watching.','a0.b':'Explore ↓',
+  'a0.k':'AEGIS PRO TECH · EDGE AI','a0.h':'Protect every gesture. Without ever watching.','a0.p':'Embedded artificial intelligence that secures your industrial sites in real time, 100% locally.','a0.b':'Discover the device ↓','a4.hint':'Drag to rotate · 360°','f.msg':'Message',
   'a1.h':'Edge AI Vision','a1.p':'Plug into your existing cameras. PPE detection in 30 ms.',
-  'a2.h':'Local Architecture','a2.1':'Raspberry Pi 5','a2.2':'0 ms Cloud','a2.3':'Plug &amp; Play',
-  'a3.h':'Zero Surveillance','a3.p':'No image recorded. Kind, local alert.',
+  'a2.h':'Local architecture','a2.1':'Raspberry Pi 5','a2.2':'30 ms inference','a2.3':'0 bytes to the cloud',
+  'a3.h':'Zero surveillance','a3.p':'No image recorded. Kind, local alert.',
   'a4.h':'Designed at UMONS','a4.p':'Spin it: this is our real CAD model.',
   'a4.m1':'Raspberry Pi 5 + cooling','a4.m2':'Infrared vision camera','a4.m3':'PoE splitter: a single cable','a4.m4':'3D-printed case (PLA)',
   'a4.s1':'Local server inside the box','a4.s2':'YOLO AI, PPE by PPE','a4.s3':'Web statistics interface',
@@ -14,7 +14,7 @@ const EN = {
   'd.eth':'Ethics','d.eth1':'100% GDPR compliant','d.use':'Use cases','d.use1':'Factories &amp; construction sites',
   'd.team':'Team · F.P.Ms UMONS','d.faq':'Questions','d.ct':'Request a demo','ct.p2':'A demonstration or a pilot test on your site.',
   'mega.1':'PLUG &amp; PLAY','mega.2':'EDGE AI · 30 FPS','mega.3':'LOCAL ALERT','mega.4':'ZERO DATA',
-  'g.badge':'FACE BLURRED · 0 ms','g.b0':'HSE feed · anonymous','g.b1':'Zone B · 10:15','g.b2':'Missing helmet','g.b3':'Local signal on','g.b4':'0 images stored',
+  'g.badge':'Face blurred · 0 ms','g.b0':'HSE feed · anonymous','g.b1':'Zone B · 10:15','g.b2':'Missing helmet','g.b3':'Local signal on','g.b4':'0 images stored',
   'tag.shell':'Shell · 3D printed (PLA)','tag.board':'Raspberry Pi 5 + cooling','tag.base':'Vented base plate',
   'nav.constat':'The problem','nav.solution':'Solution','nav.boitier':'The device','nav.preuve':'Proof','nav.ethique':'Ethics','nav.equipe':'Team',
   'cta.demo':'Request a demo','cta.how':'How it works',
@@ -53,7 +53,7 @@ const EN = {
   'sw.h':'Software','sw.1k':'Local server','sw.1v':'Everything runs inside the box','sw.2k':'YOLO AI','sw.2v':'Video processing, PPE item by PPE item','sw.3k':'Web interface','sw.3v':'Display and storage of statistical data',
   'pr.k':'Proof','pr.h':'It sees the equipment. Never the face.','pr.p':'Switch between WITH and WITHOUT AEGIS on a real capture from our prototype: objects and situations, not identities. See what happens when the helmet is forgotten.',
   'pr.real.h':'And here is the real output of our prototype.','pr.real.p':'Two captures from our prototype, untouched except the face, blurred for this page.',
-  'cmp.s1':'Helmet forgotten','cmp.s2':'Equipped','seg.on':'WITH AEGIS','seg.off':'WITHOUT AEGIS','seg.note':'Without AEGIS: the omission goes unnoticed.',
+  'cmp.s1':'Helmet forgotten','cmp.s2':'Equipped','seg.on':'With Aegis','seg.off':'Without Aegis','seg.note':'Without AEGIS: the omission goes unnoticed.',
   'demo.local':'100% LOCAL PROCESSING','demo.sim':'FIELD CAPTURE · PROTOTYPE','demo.alert':'LOCAL SIGNAL TRIGGERED',
   'demo.s1':'People analysed','demo.s2':'PPE compliant','demo.s3':'Local alerts','demo.s4':'Images stored',
   'pr.b1':'WITH PPE','pr.b2':'WITHOUT PPE','pr.1t':'Helmet and gloves recognised.','pr.1p':'Each box is a detected object, with its confidence level.',
@@ -100,7 +100,7 @@ const EN = {
   'q4':'Which equipment is detected?','a4':'Helmet, glasses, gloves, vest, harness… depending on your risk areas and the on-site calibration.',
   'q5':'How do we get started?','a5':'Fill in the contact form: we\'ll organise a demo or a free one-month pilot on a critical area of your site.',
   'ct.h':'<span class="ln"><span>Ready to aim for</span></span><span class="ln"><span class="or">zero accidents?</span></span>','ct.p':'Let\'s talk about your safety challenges. Fill in the form and we\'ll get back to you to organise a demo or a pilot test on your site.',
-  'f.name':'NAME *','f.co':'COMPANY','f.send':'Send request','f.fine':'By submitting this form, your email client will open with the details pre-filled.',
+  'f.name':'Name *','f.co':'Company','f.send':'Send request','f.fine':'By submitting this form, your email client will open with the details pre-filled.',
   'foot':'© 2026 AEGIS PRO TECH — Faculty of Engineering of Mons (UMONS). All rights reserved.'
 };
 const HUD = {

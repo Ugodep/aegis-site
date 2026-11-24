@@ -5,16 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>AEGIS Pro Tech — L'IA qui protège sans surveiller</title>
 <meta name="description" content="Un boîtier qui se branche sur les caméras déjà installées et détecte les EPI manquants en temps réel, localement, sans stocker aucune image. Projet d'étudiants de la Faculté Polytechnique de Mons (UMONS).">
-<meta name="theme-color" content="#0c0d0f">
+<meta name="theme-color" content="#000000">
 <meta property="og:title" content="AEGIS Pro Tech — L'IA qui protège sans surveiller">
 <meta property="og:description" content="Détection d'EPI par IA, en local, sans image stockée. Projet de 9 étudiants ingénieurs — UMONS.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 54'%3E%3Cpath d='M24 2 44 12v18c0 11-8 19-20 22C12 49 4 41 4 30V12z' fill='%230c0d0f' stroke='%23ff5a00' stroke-width='4'/%3E%3Ccircle cx='24' cy='26' r='7' fill='%2329b6f6'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js"}}</script>
-<link rel="stylesheet" href="assets/css/style.css?v=25">
+<link rel="stylesheet" href="assets/css/style.css?v=26">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"AEGIS Pro Tech","description":"Détection d'EPI par IA embarquée sur les caméras existantes. Privacy by Design.","parentOrganization":{"@type":"CollegeOrUniversity","name":"Faculté Polytechnique de Mons (UMONS)"}}</script>
 </head>
 <body>
@@ -35,7 +35,7 @@
   <div class="wrap nav-in">
     <a href="#hero" class="logo" aria-label="AEGIS Pro Tech" data-cursor="Haut">
       <svg viewBox="0 0 48 54" width="30" height="34" aria-hidden="true"><path d="M24 2 44 12v18c0 11-8 19-20 22C12 49 4 41 4 30V12z" fill="none" stroke="#ff5a00" stroke-width="3.4"/><path d="M24 10 37 16.500V30c0 8-5.500 13-13 15.500C16.500 43 11 38 11 30V16.500z" fill="none" stroke="#29b6f6" stroke-width="2"/><circle cx="24" cy="26" r="6.500" fill="none" stroke="#ff5a00" stroke-width="2.600"/><circle cx="24" cy="26" r="2.600" fill="#29b6f6"/></svg>
-      <span><b>AEGIS</b><em class="mono">PRO TECH</em></span>
+      <span><b>AEGIS</b><em>PRO TECH</em></span>
     </a>
     <nav class="links" id="links">
       <a href="#vision" data-i18n="nav.vision">Vision</a>
@@ -56,17 +56,21 @@
 
 <!-- ACTE 0 · HERO -->
 <section id="hero" class="act a0">
-  <div class="act-t c">
-    <h1 class="act-h" id="h1" data-i18n="a0.h">AEGIS PRO TECH</h1>
-    <p class="act-p" data-i18n="a0.p">L'IA embarquée qui protège sans surveiller.</p>
-    <a href="#vision" class="pill" data-i18n="a0.b">Explorer ↓</a>
+  <div class="hero-c">
+    <p class="eyebrow" data-i18n="a0.k">AEGIS PRO TECH · EDGE AI</p>
+    <h1 class="act-h" id="h1" data-i18n="a0.h">Protéger chaque geste. Sans jamais surveiller.</h1>
+    <p class="act-p" data-i18n="a0.p">L'intelligence artificielle embarquée qui sécurise vos sites industriels en temps réel, 100&nbsp;% en local.</p>
+    <div class="cta">
+      <a href="#contact" class="pill pill-w" data-i18n="cta.demo">Demander une démo</a>
+      <a href="#boitier" class="pill" data-i18n="a0.b">Découvrir le boîtier ↓</a>
+    </div>
   </div>
 </section>
 
 <!-- ACTE 1 · DIVE-IN OPTIQUE -->
 <section id="vision" class="act a1">
   <div class="act-t">
-    <p class="act-k mono">01</p>
+    <p class="act-k">01</p>
     <h2 class="act-h" data-i18n="a1.h">Vision Edge AI</h2>
     <p class="act-p" data-i18n="a1.p">Branchez sur vos caméras existantes. Détection EPI en 30 ms.</p>
   </div>
@@ -75,9 +79,9 @@
 <!-- ACTE 2 · MACRO ÉLECTRONIQUE -->
 <section id="architecture" class="act a2">
   <div class="act-t">
-    <p class="act-k mono">02</p>
-    <h2 class="act-h" data-i18n="a2.h">Architecture Locale</h2>
-    <div class="pills"><span class="pill" data-i18n="a2.1">Raspberry Pi 5</span><span class="pill" data-i18n="a2.2">0 ms Cloud</span><span class="pill" data-i18n="a2.3">Plug &amp; Play</span></div>
+    <p class="act-k">02</p>
+    <h2 class="act-h" data-i18n="a2.h">Architecture locale</h2>
+    <div class="pills"><span class="pill" data-i18n="a2.1">Raspberry Pi 5</span><span class="pill" data-i18n="a2.2">Inférence 30 ms</span><span class="pill" data-i18n="a2.3">0 octet Cloud</span></div>
   </div>
 </section>
 
@@ -95,78 +99,84 @@
       <div class="cam-alert" id="camAlert"><i></i><span class="mono" data-i18n="demo.alert">SIGNAL LOCAL ACTIVÉ</span></div>
     </div>
     <div class="win-bar">
-      <div class="seg mono" id="seg"><button class="on" data-m="1" data-i18n="seg.on">AVEC AEGIS</button><button data-m="0" data-i18n="seg.off">SANS AEGIS</button></div>
-      <div class="cmp-scn mono" id="cmpScn"><button class="on" data-s="missing" data-i18n="cmp.s1">Casque oublié</button><button data-s="equipped" data-i18n="cmp.s2">Équipé</button></div>
-      <span class="g-badge mono" data-i18n="g.badge">VISAGE FLOUTÉ · 0 ms</span>
+      <div class="ios" id="seg" data-v="0" role="group" aria-label="Avec ou sans Aegis"><button class="on" data-m="1" data-i18n="seg.on">Avec Aegis</button><button data-m="0" data-i18n="seg.off">Sans Aegis</button></div>
+      <div class="ios" id="cmpScn" data-v="0" role="group" aria-label="Scénario"><button class="on" data-s="missing" data-i18n="cmp.s1">Casque oublié</button><button data-s="equipped" data-i18n="cmp.s2">Équipé</button></div>
+      <span class="g-badge" data-i18n="g.badge">Visage flouté · 0 ms</span>
     </div>
     <div class="stats">
-      <div class="stat"><span class="mono" data-i18n="demo.s1">Personnes analysées</span><b id="stP">0</b></div>
-      <div class="stat"><span class="mono" data-i18n="demo.s2">EPI conformes</span><b class="ok" id="stOk">0</b></div>
-      <div class="stat"><span class="mono" data-i18n="demo.s3">Alertes locales</span><b class="bad" id="stAl">0</b></div>
-      <div class="stat"><span class="mono" data-i18n="demo.s4">Images stockées</span><b class="cy">0</b></div>
+      <div class="stat"><span data-i18n="demo.s1">Personnes analysées</span><b id="stP">0</b></div>
+      <div class="stat"><span data-i18n="demo.s2">EPI conformes</span><b class="ok" id="stOk">0</b></div>
+      <div class="stat"><span data-i18n="demo.s3">Alertes locales</span><b class="bad" id="stAl">0</b></div>
+      <div class="stat"><span data-i18n="demo.s4">Images stockées</span><b class="cy">0</b></div>
     </div>
   </div>
   <div class="act-t">
-    <p class="act-k mono">03</p>
-    <h2 class="act-h" data-i18n="a3.h">Zéro Surveillance</h2>
+    <p class="act-k">03</p>
+    <h2 class="act-h" data-i18n="a3.h">Zéro surveillance</h2>
     <p class="act-p" data-i18n="a3.p">Aucune image enregistrée. Alerte locale bienveillante.</p>
   </div>
 </section>
 
 <!-- ACTE 4 · INSPECTION 360° -->
 <section id="boitier" class="act a4" tabindex="0" role="group" aria-label="Modèle 3D interactif du boîtier AEGIS — flèches gauche/droite pour tourner" data-cursor="Glisser">
-  <div class="fcard fl"><h3 class="mono" data-i18n="sp.h">Le matériel</h3><ul>
-    <li data-i18n="a4.m1">Raspberry Pi 5 + refroidissement</li><li data-i18n="a4.m2">Caméra à vision infrarouge</li><li data-i18n="a4.m3">Splitter PoE : un seul câble</li><li data-i18n="a4.m4">Boîtier imprimé en 3D (PLA)</li></ul></div>
-  <div class="fcard fr"><h3 class="mono" data-i18n="sw.h">Le logiciel</h3><ul>
-    <li data-i18n="a4.s1">Serveur local dans le boîtier</li><li data-i18n="a4.s2">IA YOLO, EPI par EPI</li><li data-i18n="a4.s3">Interface web de statistiques</li></ul></div>
-  <div class="stage-ui">
-    <button class="pill" id="exBtn" type="button"><span class="l-ex" data-i18n="hw.ex">Vue éclatée</span><span class="l-as" data-i18n="hw.as">Assembler</span></button>
-    <button class="pill" id="rstBtn" type="button" data-i18n="hw.reset">Recentrer</button>
+  <span class="drag-badge" data-i18n="a4.hint">Glisser pour pivoter · 360°</span>
+  <div class="a4-b">
+    <div class="a4-row">
+      <div>
+        <p class="act-k">04</p>
+        <h2 class="act-h" data-i18n="a4.h">Conçu à l'UMONS</h2>
+        <p class="act-p" data-i18n="a4.p">Faites-le tourner : c'est notre vrai modèle CAO.</p>
+      </div>
+      <div class="stage-ui">
+        <button class="pill" id="exBtn" type="button"><span class="l-ex" data-i18n="hw.ex">Vue éclatée</span><span class="l-as" data-i18n="hw.as">Assembler</span></button>
+        <button class="pill" id="rstBtn" type="button" data-i18n="hw.reset">Recentrer</button>
+      </div>
+    </div>
+    <div class="fcards">
+      <div class="fcard"><h3 data-i18n="sp.h">Matériel</h3><ul>
+        <li data-i18n="a4.m1">Raspberry Pi 5 + refroidissement</li><li data-i18n="a4.m2">Caméra à vision infrarouge</li><li data-i18n="a4.m3">Splitter PoE : un seul câble</li><li data-i18n="a4.m4">Boîtier imprimé en 3D (PLA)</li></ul></div>
+      <div class="fcard"><h3 data-i18n="sw.h">Logiciel</h3><ul>
+        <li data-i18n="a4.s1">Serveur local dans le boîtier</li><li data-i18n="a4.s2">IA YOLO, EPI par EPI</li><li data-i18n="a4.s3">Interface web de statistiques</li></ul></div>
+    </div>
   </div>
-  <div class="act-t">
-    <p class="act-k mono">04</p>
-    <h2 class="act-h" data-i18n="a4.h">Conçu à l'UMONS</h2>
-    <p class="act-p" data-i18n="a4.p">Faites-le tourner : c'est notre vrai modèle CAO.</p>
-  </div>
-  <div class="stage-hint mono"><span data-i18n="hw.drag">← GLISSEZ POUR TOURNER →</span></div>
 </section>
 
 <!-- DOSSIER B2B · BENTO -->
 <section id="dossier" class="dos">
   <div class="wrap">
-    <p class="kicker mono rv"><span class="k">—</span> <span data-i18n="d.k">Dossier entreprise</span></p>
+    <p class="kicker rv"><span class="k">—</span> <span data-i18n="d.k">Dossier entreprise</span></p>
     <h2 class="dos-h rv" data-i18n="d.h">Le dossier B2B, en une page.</h2>
     <div class="bento">
-      <div class="bc b-num rv"><b class="mono" data-count="128939" data-sep>128 939</b><span data-i18n="d.n1">accidents du travail par an en Belgique<small>Source : FEDRIS 2024</small></span></div>
-      <div class="bc b-num rv"><b class="mono" data-count="200000" data-sep data-pre="≈ " data-suf=" €">≈ 200 000 €</b><span data-i18n="d.n2">coût moyen par accident grave</span></div>
-      <div class="bc b-num b-or rv"><b class="mono" data-count="38000" data-sep data-suf=" €">38 000 €</b><span data-i18n="d.n3">pack industriel de 10 boîtiers</span></div>
+      <div class="bc b-num rv"><b data-count="128939" data-sep>128 939</b><span data-i18n="d.n1">accidents du travail par an en Belgique<small>Source : FEDRIS 2024</small></span></div>
+      <div class="bc b-num rv"><b data-count="200000" data-sep data-pre="≈ " data-suf=" €">≈ 200 000 €</b><span data-i18n="d.n2">coût moyen par accident grave</span></div>
+      <div class="bc b-num b-or rv"><b data-count="38000" data-sep data-suf=" €">38 000 €</b><span data-i18n="d.n3">pack industriel de 10 boîtiers</span></div>
       <div class="bc b-roi rv" id="cmp">
-        <h3 class="mono" data-i18n="d.roi">Retour sur investissement</h3>
-        <div class="bar-row"><div class="bar-l"><span data-i18n="d.r1">Coût de l'inaction · par an</span><b class="mono">≈ 200 000 €</b></div><div class="bar"><i class="b1" style="--w:100%"></i></div></div>
-        <div class="bar-row"><div class="bar-l"><span data-i18n="d.r2">Investissement AEGIS · pack de 10 boîtiers</span><b class="mono or">38 000 €</b></div><div class="bar"><i class="b2" style="--w:19%"></i></div></div>
-        <p class="note mono" data-i18n="d.rn">Estimation de l'équipe AEGIS, première année : un seul accident évité couvre l'abonnement.</p>
+        <h3 data-i18n="d.roi">Retour sur investissement</h3>
+        <div class="bar-row"><div class="bar-l"><span data-i18n="d.r1">Coût de l'inaction · par an</span><b>≈ 200 000 €</b></div><div class="bar"><i class="b1" style="--w:100%"></i></div></div>
+        <div class="bar-row"><div class="bar-l"><span data-i18n="d.r2">Investissement AEGIS · pack de 10 boîtiers</span><b class="or">38 000 €</b></div><div class="bar"><i class="b2" style="--w:19%"></i></div></div>
+        <p class="note" data-i18n="d.rn">Estimation de l'équipe AEGIS, première année : un seul accident évité couvre l'abonnement.</p>
       </div>
       <div class="bc b-eth rv">
-        <h3 class="mono" data-i18n="d.eth">Éthique</h3>
+        <h3 data-i18n="d.eth">Éthique</h3>
         <p class="bc-big" data-i18n="d.eth1">100 % conforme RGPD</p>
         <ul><li data-i18n="p1.t">Aucun stockage d'images</li><li data-i18n="p2.t">Aucune reconnaissance faciale</li><li data-i18n="p3.t">Outil statistique, pas disciplinaire</li></ul>
       </div>
       <div class="bc b-use rv">
-        <h3 class="mono" data-i18n="d.use">Cas d'usage</h3>
+        <h3 data-i18n="d.use">Cas d'usage</h3>
         <p class="bc-big" data-i18n="d.use1">Usines &amp; chantiers</p>
         <ul><li data-i18n="cas1.t">Sites industriels &amp; usines</li><li data-i18n="cas2.t">Chantiers de construction</li></ul>
       </div>
       <div class="bc b-team rv">
-        <h3 class="mono" data-i18n="d.team">Équipe · F.P.Ms UMONS</h3>
+        <h3 data-i18n="d.team">Équipe · F.P.Ms UMONS</h3>
         <p class="bc-big" data-i18n="team.h">Neuf étudiants ingénieurs, une obsession : zéro accident.</p>
         <div class="roster">
-      <h3 class="mono" data-i18n="team.p1">Pôle business &amp; stratégie</h3>
+      <h3 data-i18n="team.p1">Pôle business &amp; stratégie</h3>
       <ul>
         <li><b>Ugo Deproote</b><a class="mono" href="mailto:ugo.deproote@student.umons.ac.be" data-cursor="Écrire">ugo.deproote@student.umons.ac.be</a></li>
         <li><b>Léa Stevenart</b><a class="mono" href="mailto:lea.stevenart@student.umons.ac.be" data-cursor="Écrire">lea.stevenart@student.umons.ac.be</a></li>
         <li><b>Liam Bernier</b><a class="mono" href="mailto:liam.bernier@student.umons.ac.be" data-cursor="Écrire">liam.bernier@student.umons.ac.be</a></li>
       </ul>
-      <h3 class="mono" data-i18n="team.p2">Pôle R&amp;D &amp; ingénierie</h3>
+      <h3 data-i18n="team.p2">Pôle R&amp;D &amp; ingénierie</h3>
       <ul>
         <li><b>Yanis Dewolf</b></li><li><b>Pierre Cawet</b></li><li><b>Mathys Ficarotta</b></li><li><b>Hugo Godfroid</b></li><li><b>Luna Renard</b></li><li><b>Romain Bequet</b></li>
       </ul>
@@ -174,7 +184,7 @@
 
       </div>
       <div class="bc b-faq rv">
-        <h3 class="mono" data-i18n="d.faq">Questions</h3>
+        <h3 data-i18n="d.faq">Questions</h3>
         <div class="qas">
       <details class="qa" name="faq" open><summary><span data-i18n="q1">Faut-il changer nos caméras ?</span><i></i></summary><p data-i18n="a1">Non. Le boîtier récupère le flux de vos caméras classiques déjà installées. C'est du Plug &amp; Play.</p></details>
       <details class="qa" name="faq"><summary><span data-i18n="q2">Des images sont-elles stockées ?</span><i></i></summary><p data-i18n="a2">Non. Le flux est analysé en direct dans le boîtier. Aucune image n'est stockée ni envoyée dans le cloud.</p></details>
@@ -185,14 +195,13 @@
       </div>
       <div class="bc b-ct rv" id="contact">
         <div class="ct-l">
-          <h3 class="mono" data-i18n="d.ct">Demander une démo</h3>
           <p class="bc-big" data-i18n="ct.p2">Une démonstration ou un test pilote sur votre site.</p>
         </div>
         <form class="form" id="form" novalidate>
-      <label><span class="mono" data-i18n="f.name">NOM *</span><input name="nom" required autocomplete="name"></label>
-      <label><span class="mono">EMAIL *</span><input name="email" type="email" required autocomplete="email"></label>
-      <label><span class="mono" data-i18n="f.co">ENTREPRISE</span><input name="entreprise" autocomplete="organization"></label>
-      <label><span class="mono">MESSAGE</span><textarea name="message" rows="4"></textarea></label>
+      <label><span data-i18n="f.name">Nom *</span><input name="nom" required autocomplete="name"></label>
+      <label><span>Email *</span><input name="email" type="email" required autocomplete="email"></label>
+      <label><span data-i18n="f.co">Entreprise</span><input name="entreprise" autocomplete="organization"></label>
+      <label><span data-i18n="f.msg">Message</span><textarea name="message" rows="4"></textarea></label>
       <button class="btn btn-lg" type="submit"><span data-i18n="f.send">Envoyer la demande</span><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 12h15M13 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.400" stroke-linecap="square"/></svg></button>
       <p class="fine" id="formMsg" data-i18n="f.fine">En soumettant ce formulaire, votre messagerie s'ouvrira avec les informations pré-remplies.</p>
     </form>
@@ -204,12 +213,12 @@
 
 <footer class="foot">
   <div class="wrap foot-in">
-    <a href="#hero" class="logo" data-cursor="Haut"><svg viewBox="0 0 48 54" width="24" height="27" aria-hidden="true"><path d="M24 2 44 12v18c0 11-8 19-20 22C12 49 4 41 4 30V12z" fill="none" stroke="#ff5a00" stroke-width="3.400"/><circle cx="24" cy="26" r="2.600" fill="#29b6f6"/></svg><span><b>AEGIS</b><em class="mono">PRO TECH</em></span></a>
-    <p class="mono" data-i18n="foot">© 2026 AEGIS PRO TECH — Faculté Polytechnique de Mons (UMONS). Tous droits réservés.</p>
+    <a href="#hero" class="logo" data-cursor="Haut"><svg viewBox="0 0 48 54" width="24" height="27" aria-hidden="true"><path d="M24 2 44 12v18c0 11-8 19-20 22C12 49 4 41 4 30V12z" fill="none" stroke="#ff5a00" stroke-width="3.400"/><circle cx="24" cy="26" r="2.600" fill="#29b6f6"/></svg><span><b>AEGIS</b><em>PRO TECH</em></span></a>
+    <p data-i18n="foot">© 2026 AEGIS PRO TECH — Faculté Polytechnique de Mons (UMONS). Tous droits réservés.</p>
   </div>
 </footer>
 
 <script src="assets/vendor/lenis.min.js"></script>
-<script type="module" src="assets/js/main.js?v=25"></script>
+<script type="module" src="assets/js/main.js?v=26"></script>
 </body>
 </html>
