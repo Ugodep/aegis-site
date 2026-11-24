@@ -85,7 +85,7 @@ export function initPPE({ wrap, gl, ov, ui, model }){
     dpr = Math.min(devicePixelRatio || 1, 1.6);
     renderer.setPixelRatio(dpr);
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15; renderer.outputColorSpace = THREE.SRGBColorSpace;
     scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b0d10); scene.fog = new THREE.Fog(0x0b0d10, 10, 24);
     camera = new THREE.PerspectiveCamera(42, 16 / 9, .1, 60);
     scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), .04).texture;
@@ -94,8 +94,8 @@ export function initPPE({ wrap, gl, ov, ui, model }){
     const key = new THREE.DirectionalLight(0xfff1e0, 2.3); key.position.set(4, 7.5, 6.5); key.castShadow = true;
     key.shadow.mapSize.set(1024, 1024); Object.assign(key.shadow.camera, { left: -9, right: 9, top: 7, bottom: -5, near: .5, far: 26 }); key.shadow.bias = -.0004;
     scene.add(key);
-    const rim = new THREE.PointLight(0xff7a30, 14, 16); rim.position.set(6, 2.6, -2); scene.add(rim);
-    const fill = new THREE.PointLight(0x4fc3ff, 10, 16); fill.position.set(-6, 3, 3); scene.add(fill);
+    const rim = new THREE.PointLight(0xff5a00, 12, 16); rim.position.set(6, 2.6, -2); scene.add(rim);
+    const fill = new THREE.PointLight(0x7dd3fc, 12, 16); fill.position.set(-6, 3, 3); scene.add(fill);
 
     // sol + marquages
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(44, 26), new THREE.MeshStandardMaterial({ map: concrete(), roughness: .92, envMapIntensity: .2 }));

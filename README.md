@@ -25,3 +25,5 @@ l'orange AEGIS n'est utilisé que pour la LED (body67406) et le faisceau optique
 Chorégraphie de #solution : clés KEYS (px, py, rx, ry, s + lf = coque soulevée, fw = cadrage sur la LED, bm = faisceau).
 Typographie monumentale : #mega ; cartes glassmorphism : #gYolo (étape 03) et #gBento (étape 04) ; textes FR/EN dans i18n.js.
 Debug pose : ?snap&at=solution:.7&rig=px,py,rx,ry,s,lf,fw,bm,al
+
+Mesure du coût de rendu : ajouter ?perf à l'URL (expose window.__perf et window.__aegis : renderer.info, caméra, pièces).

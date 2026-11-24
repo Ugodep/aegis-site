@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from '../vendor/three/addons/loaders/GLTFLoader.js';
 import { toCreasedNormals } from '../vendor/three/addons/utils/BufferGeometryUtils.js';
 import { RoomEnvironment } from '../vendor/three/addons/environments/RoomEnvironment.js';
-import { initPPE } from './ppe3d.js?v=20';
+import { initPPE } from './ppe3d.js?v=21';
 import { initI18n, getLang, hud as hudText, msg, onLang, fmtNum } from './i18n.js?v=20';
 
 /* ------------------------------------------------------------------ */
@@ -16,6 +16,7 @@ const modelP = new Promise(r => { resolveModel = r; });   // modèle du boîtier
 
 const qs = new URLSearchParams(location.search);
 const SNAP = qs.has('snap');
+const PERF = qs.has('perf') ? { t: 0, n: 0 } : null;   // ?perf : expose window.__aegis / __perf pour mesurer le coût du rendu
 const DBG = (() => { const r = qs.get('rig'); return r ? r.split(',').map(Number) : null; })();   // debug pose : ?rig=px,py,rx,ry,s,lf,fw,bm,al
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = (s, r = document) => r.querySelector(s);
@@ -526,7 +527,8 @@ function loop(now){
   const y = scrollY_();
   updateUI(y);
   if (document.hidden === false){
-    renderGL(dt, y);
+    if (PERF){ const t0 = performance.now(); renderGL(dt, y); PERF.t += performance.now() - t0; PERF.n++; window.__perf = PERF; window.__aegis = { renderer, camera, rig, parts, st }; }
+    else renderGL(dt, y);
     if (ppe && ppe.running) ppe.frame(now);   // scène « preuve » : rendue dans la même boucle, seulement si visible
   }
   cursorTick && cursorTick();
