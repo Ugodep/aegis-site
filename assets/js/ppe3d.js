@@ -22,27 +22,6 @@ export function initPPE({ wrap, gl, ov, ui, model }){
   let heroStatus = 'ok', alertUntil = 0, prevPhase = -1, fpsN = 0, fpsT = 0, fps = 30;
   let tx = 0, ty = 0;
 
-  /* ---------- textures ---------- */
-  function canvasTex(w, h, draw, repeat){
-    const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
-    if (repeat){ t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(...repeat); }
-    return t;
-  }
-  const concrete = () => canvasTex(512, 512, (x, w, h) => {
-    x.fillStyle = '#26282c'; x.fillRect(0, 0, w, h);
-    for (let i = 0; i < 5000; i++){ const v = 28 + Math.random() * 30 | 0; x.fillStyle = `rgb(${v},${v + 1},${v + 3})`; x.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 3, 1 + Math.random() * 3); }
-    x.strokeStyle = 'rgba(0,0,0,.35)'; x.lineWidth = 2; x.strokeRect(0, 0, w, h);
-  }, [14, 8]);
-  const hazard = () => canvasTex(64, 16, (x, w, h) => {
-    x.fillStyle = '#ff5a00'; x.fillRect(0, 0, w, h); x.fillStyle = '#0c0d0f';
-    for (let i = -2; i < 6; i++){ x.beginPath(); x.moveTo(i * 16, h); x.lineTo(i * 16 + 8, h); x.lineTo(i * 16 + 24, 0); x.lineTo(i * 16 + 16, 0); x.fill(); }
-  }, [40, 1]);
-  const zoneText = () => canvasTex(512, 160, (x, w, h) => {
-    x.fillStyle = 'rgba(0,0,0,0)'; x.clearRect(0, 0, w, h);
-    x.font = '800 96px Archivo, Arial Black, sans-serif'; x.fillStyle = '#ffb400'; x.textBaseline = 'middle'; x.fillText('ZONE B', 14, h / 2 + 4);
-  });
-
   /* ---------- ouvrier mannequin ---------- */
   const M = (c, r = .85, m = 0) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m, envMapIntensity: .4 });
   function makeWorker(o){
@@ -86,7 +65,7 @@ export function initPPE({ wrap, gl, ov, ui, model }){
     renderer.setPixelRatio(dpr);
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15; renderer.outputColorSpace = THREE.SRGBColorSpace;
-    scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b0d10); scene.fog = new THREE.Fog(0x0b0d10, 10, 24);
+    scene = new THREE.Scene(); scene.background = new THREE.Color(0x050608); scene.fog = new THREE.Fog(0x050608, 12, 26);
     camera = new THREE.PerspectiveCamera(42, 16 / 9, .1, 60);
     scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), .04).texture;
 
@@ -97,25 +76,15 @@ export function initPPE({ wrap, gl, ov, ui, model }){
     const rim = new THREE.PointLight(0xff5a00, 12, 16); rim.position.set(6, 2.6, -2); scene.add(rim);
     const fill = new THREE.PointLight(0x7dd3fc, 12, 16); fill.position.set(-6, 3, 3); scene.add(fill);
 
-    // sol + marquages
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(44, 26), new THREE.MeshStandardMaterial({ map: concrete(), roughness: .92, envMapIntensity: .2 }));
+    // studio : aucun décor. Seuls un sol récepteur d'ombre (invisible) et un halo radial doux ancrent les ouvriers.
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(44, 26), new THREE.ShadowMaterial({ opacity: .45 }));
     ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
-    const flat = (w, d, x, z, mat) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), mat); m.rotation.x = -Math.PI / 2; m.position.set(x, .012, z); scene.add(m); return m; };
-    const yellow = new THREE.MeshBasicMaterial({ color: 0xffb400 });
-    flat(44, .13, 0, -2.3, yellow); flat(44, .13, 0, 2.55, yellow);
-    for (let i = -9; i < 9; i++) flat(.9, .1, i * 1.6 + .4, .1, new THREE.MeshBasicMaterial({ color: 0xcfcfc8, transparent: true, opacity: .35 }));
-    flat(4.6, 2.5, 0, .35, new THREE.MeshBasicMaterial({ color: 0xff3b2e, transparent: true, opacity: .09, depthWrite: false }));
-    const zt = flat(2.8, .88, -3.9, 1.75, new THREE.MeshBasicMaterial({ map: zoneText(), transparent: true, opacity: .8, depthWrite: false }));
-
-    // mur + bandeau de danger + structures
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(34, 5.2, .3), M(0x24272c, .95)); wall.position.set(0, 2.6, -3.5); wall.receiveShadow = true; scene.add(wall);
-    const band = new THREE.Mesh(new THREE.PlaneGeometry(34, .34), new THREE.MeshBasicMaterial({ map: hazard() })); band.position.set(0, .2, -3.34); scene.add(band);
-    const pipe = new THREE.Mesh(new THREE.CylinderGeometry(.13, .13, 34, 16), M(0x6e747d, .4, .7)); pipe.rotation.z = Math.PI / 2; pipe.position.set(0, 4.15, -3.22); pipe.castShadow = true; scene.add(pipe);
-    [-6, 0, 6].forEach(x => { const s = new THREE.Mesh(new THREE.BoxGeometry(.08, .3, .2), M(0x3a3d43)); s.position.set(x, 4.15, -3.25); scene.add(s); });
-    [-2.5, 2.9, 7.5, -8].forEach(x => { const col = new THREE.Mesh(new THREE.BoxGeometry(.28, 5.2, .28), M(0x3b3e45, .6, .4)); col.position.set(x, 2.6, -3.2); col.castShadow = true; scene.add(col); const b = new THREE.Mesh(new THREE.BoxGeometry(.3, .5, .3), new THREE.MeshBasicMaterial({ color: 0xffb400 })); b.position.set(x, .75, -3.2); scene.add(b); });
-    const cont = new THREE.Mesh(new THREE.BoxGeometry(2.6, 2.5, 2.4), M(0x1d4a73, .6, .2)); cont.position.set(6.6, 1.25, -2); cont.castShadow = cont.receiveShadow = true; scene.add(cont);
-    for (let i = 0; i < 7; i++){ const r = new THREE.Mesh(new THREE.BoxGeometry(.04, 2.3, .06), M(0x17374f)); r.position.set(5.5 + i * .32, 1.25, -.78); scene.add(r); }
-    for (let i = 0; i < 3; i++){ const b = new THREE.Mesh(new THREE.CylinderGeometry(.3, .3, .95, 20), M(i === 1 ? 0xc8c8c0 : 0xff5a00, .45, .3)); b.position.set(-6.9 + i * .72, .48, -2.5 + (i % 2) * .5); b.castShadow = true; scene.add(b); }
+    const hc = document.createElement('canvas'); hc.width = hc.height = 256; const hx = hc.getContext('2d');
+    const hg = hx.createRadialGradient(128, 128, 0, 128, 128, 128);
+    hg.addColorStop(0, 'rgba(125,211,252,.22)'); hg.addColorStop(.4, 'rgba(70,110,150,.09)'); hg.addColorStop(1, 'rgba(5,6,8,0)');
+    hx.fillStyle = hg; hx.fillRect(0, 0, 256, 256);
+    const halo = new THREE.Mesh(new THREE.PlaneGeometry(22, 12), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(hc), transparent: true, depthWrite: false }));
+    halo.rotation.x = -Math.PI / 2; halo.position.set(0, .01, .2); scene.add(halo);
 
     // ouvriers
     const defs = [
@@ -156,8 +125,7 @@ export function initPPE({ wrap, gl, ov, ui, model }){
       const holder = new THREE.Group(); holder.add(m); m.position.set(0, 0, .02);
       holder.scale.setScalar(5.2); holder.position.copy(boxPos); holder.rotation.set(.5, -.22, 0);
       scene.add(holder);
-      const arm = new THREE.Mesh(new THREE.BoxGeometry(.1, .1, .75), M(0x9aa6b8, .4, .8)); arm.position.set(boxPos.x + .7, boxPos.y + .05, -3.05); arm.castShadow = true; scene.add(arm);
-      const plate = new THREE.Mesh(new THREE.BoxGeometry(.5, .7, .06), M(0x9aa6b8, .4, .8)); plate.position.set(boxPos.x + .7, boxPos.y + .05, -3.33); scene.add(plate);
+      // le boîtier flotte : pas de bras ni de plaque de fixation
     }).catch(() => {});
     built = true; resize();
   }

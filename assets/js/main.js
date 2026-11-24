@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from '../vendor/three/addons/loaders/GLTFLoader.js';
 import { toCreasedNormals } from '../vendor/three/addons/utils/BufferGeometryUtils.js';
 import { RoomEnvironment } from '../vendor/three/addons/environments/RoomEnvironment.js';
-import { initPPE } from './ppe3d.js?v=21';
+import { initPPE } from './ppe3d.js?v=22';
 import { initI18n, getLang, hud as hudText, msg, onLang, fmtNum } from './i18n.js?v=20';
 
 /* ------------------------------------------------------------------ */
