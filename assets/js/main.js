@@ -151,7 +151,7 @@ function initGL(){
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
     uniforms: { u: { value: 0 } },
     vertexShader: 'varying float vY;varying float vF;void main(){vY=position.y;vec4 mv=modelViewMatrix*vec4(position,1.);vec3 n=normalize(normalMatrix*normal);vF=abs(dot(n,normalize(-mv.xyz)));gl_Position=projectionMatrix*mv;}',
-    fragmentShader: 'varying float vY;varying float vF;uniform float u;void main(){float t=clamp((vY/' + BEAM.len.toFixed(4) + ')+.5,0.,1.);float a=u*.17*pow(1.-t,1.6)*smoothstep(0.,.14,t+.02)*pow(smoothstep(.18,1.,vF),1.6);gl_FragColor=vec4(1.,.42,.08,a);}'
+    fragmentShader: 'varying float vY;varying float vF;uniform float u;void main(){float t=clamp((vY/' + BEAM.len.toFixed(4) + ')+.5,0.,1.);float a=u*.085*pow(1.-t,1.6)*smoothstep(0.,.14,t+.02)*pow(smoothstep(.18,1.,vF),1.6);gl_FragColor=vec4(1.,.42,.08,a);}'
   }));
   beam.geometry.translate(0, -BEAM.len / 2, 0);            // sommet à l'origine, ouverture vers -Y
   beam.position.set(...BEAM.pos); beam.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), new THREE.Vector3(...BEAM.dir).normalize());
@@ -389,7 +389,7 @@ function renderGL(dt, y){
       const t = (beamSeed[i * 3] + time * (.12 + beamSeed[i * 3 + 1] * .12)) % 1, a = beamSeed[i * 3 + 2] * 6.283, r = R * t * Math.sqrt(beamSeed[i * 3 + 1]);
       pa.setXYZ(i, Math.cos(a) * r, -t * L, Math.sin(a) * r);
     }
-    pa.needsUpdate = true; beamPts.material.opacity = .55 * st.bm;
+    pa.needsUpdate = true; beamPts.material.opacity = .3 * st.bm;
   }
   beam.visible = st.bm > .01; beam.material.uniforms.u.value = st.bm * (.75 + Math.sin(time * 1.6) * .15);
   // onde circulaire qui part de la LED
