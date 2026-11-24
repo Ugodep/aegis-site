@@ -327,3 +327,51 @@ body.menu .burger i:nth-child(1){top:17px;transform:rotate(45deg)}body.menu .bur
   .ios{font-size:10.5px}.ios button{padding:6px 3px;text-overflow:clip}
 }
 @media (max-width:900px){.win-bar .ios button{overflow:visible;text-overflow:clip;font-size:10px;padding:6px 2px}}
+
+/* ---------- v5 : titres cinétiques, rail Keynote, viseur optique, annotations pilules, profondeur Bento ---------- */
+/* reflet métallique qui balaie le dégradé argenté (position pilotée par le scroll via --sh) */
+.act-h,.dos-h,.hero-c .act-h .w>span{
+  background-image:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.95) 50%,transparent 58%),linear-gradient(180deg,#FFFFFF 0%,#9E9EA4 100%);
+  background-size:260% 100%,100% 100%;background-repeat:no-repeat;background-position:var(--sh,140%) 0,0 0}
+/* titre du hero : mot par mot, masquage vertical */
+.hero-c .act-h{background:none;-webkit-text-fill-color:initial;color:inherit}
+.hero-c .act-h .w{display:inline-block;overflow:hidden;vertical-align:top;padding:0 .02em .12em;margin-bottom:-.12em}
+.hero-c .act-h .w>span{display:inline-block;transform:translateY(108%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
+  transition:transform 1.15s cubic-bezier(.16,1,.3,1);transition-delay:calc(.25s + var(--i) * 85ms)}
+body.ready .act.on .hero-c .act-h .w>span{transform:none}
+/* rail de progression latéral */
+.rail{position:fixed;right:18px;top:50%;transform:translateY(-50%);z-index:90;display:flex;flex-direction:column;gap:10px;padding:10px 7px;border-radius:980px;background:rgba(0,0,0,.28);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--line);transition:opacity .5s var(--ease)}
+.rail.off{opacity:0;pointer-events:none}
+.rail a{display:block;padding:5px 7px;margin:-5px -7px}
+.rail i{display:block;width:3px;height:22px;border-radius:980px;background:rgba(255,255,255,.22);transition:height .45s var(--ease),background .35s var(--ease),box-shadow .35s var(--ease)}
+.rail a:hover i{background:rgba(255,255,255,.55)}
+.rail a.on i{height:38px;background:#F5F5F7;box-shadow:0 0 10px rgba(255,255,255,.55),0 0 18px rgba(255,90,0,.35)}
+@media (max-width:900px){.rail{display:none}}
+/* viseur optique Apple Camera */
+.reticle{position:fixed;left:0;top:0;width:0;height:0;z-index:4;pointer-events:none;opacity:0;transition:opacity .35s var(--ease)}
+.reticle svg{position:absolute;left:-95px;top:-95px;width:190px;height:190px;overflow:visible}
+.reticle .rg{fill:none;stroke:rgba(255,255,255,.55);stroke-width:.7}
+.reticle .rg.a{stroke:rgba(255,255,255,.7);stroke-dasharray:.9 5.2;stroke-width:3;transform-origin:0 0;animation:rspin 28s linear infinite}
+.reticle .rg.b{stroke-dasharray:1 3;stroke:rgba(255,255,255,.4);transform-origin:0 0;animation:rspin 18s linear infinite reverse}
+.reticle .rg.c{stroke:rgba(255,255,255,.35)}
+.reticle .rk{fill:none;stroke:#FF5A00;stroke-width:1.6;stroke-linecap:round;transform-origin:0 0;transform:scale(1.35);opacity:.5;transition:transform .8s var(--ease),opacity .6s var(--ease)}
+.reticle .rx{stroke:rgba(255,255,255,.6);stroke-width:.8;fill:none}
+.reticle .rt{position:absolute;left:0;top:112px;transform:translateX(-50%);white-space:nowrap;font-size:10.5px;letter-spacing:.14em;color:rgba(245,245,247,.75);transition:color .4s}
+.reticle.lock .rk{transform:scale(1);opacity:1}
+.reticle.lock .rt{color:#FF5A00}
+@keyframes rspin{to{transform:rotate(360deg)}}
+@media (max-width:900px){.reticle svg{left:-60px;top:-60px;width:120px;height:120px}.reticle .rt{top:72px;font-size:9px}}
+/* annotations de la vue éclatée : pilules verre haute lisibilité */
+.pin .pl{background:rgba(255,255,255,.45)}
+.pin .pl i{right:-3px;top:-3px;width:6px;height:6px;background:#fff;box-shadow:0 0 0 3px rgba(255,90,0,.22),0 0 12px 2px rgba(255,90,0,.55)}
+.pin .pt{right:calc(var(--w,60px) + 10px);top:-15px;padding:6px 12px;border-radius:980px;font-size:12.5px;line-height:1;font-weight:500;color:#F5F5F7;
+  background:rgba(10,10,12,.82);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.16)}
+/* profondeur des cartes Bento */
+.b-num{background:radial-gradient(120% 100% at 18% 0%,rgba(255,255,255,.075),transparent 62%),var(--surf)}
+.b-or{background:radial-gradient(120% 110% at 18% 0%,rgba(255,110,20,.20),transparent 62%),var(--surf)}
+.b-ct{background:radial-gradient(70% 90% at 50% 0%,rgba(255,90,0,.07),transparent 72%),var(--surf)}
+.b-eth ul{margin-top:12px}
+.b-eth li{padding:7px 0}
+.b-eth .flow{margin-bottom:12px}
+.b-use li{padding:12px 0}
+@media (max-width:900px){.a2 .act-t{max-width:88vw}}

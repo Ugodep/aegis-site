@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js"}}</script>
-<link rel="stylesheet" href="assets/css/style.css?v=27">
+<link rel="stylesheet" href="assets/css/style.css?v=28">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"AEGIS Pro Tech","description":"Détection d'EPI par IA embarquée sur les caméras existantes. Privacy by Design.","parentOrganization":{"@type":"CollegeOrUniversity","name":"Faculté Polytechnique de Mons (UMONS)"}}</script>
 </head>
 <body>
@@ -27,6 +27,13 @@
 </div>
 
 <canvas id="gl" aria-hidden="true"></canvas>
+<nav class="rail" id="rail" aria-label="Actes">
+  <a href="#hero" title="Accueil" aria-label="Acte 0"><i></i></a>
+  <a href="#vision" title="Vision" aria-label="Acte 1"><i></i></a>
+  <a href="#architecture" title="Architecture" aria-label="Acte 2"><i></i></a>
+  <a href="#preuve" title="Preuve" aria-label="Acte 3"><i></i></a>
+  <a href="#boitier" title="Boîtier" aria-label="Acte 4"><i></i></a>
+</nav>
 <div class="progress" aria-hidden="true"><i id="progress"></i></div>
 <div class="cur" id="cur" aria-hidden="true"><span id="curT"></span></div>
 
@@ -85,10 +92,18 @@
   </div>
 </section>
 
+<div class="reticle" id="reticle" aria-hidden="true">
+  <svg viewBox="-100 -100 200 200">
+    <circle class="rg a" r="86"/><circle class="rg b" r="64"/><circle class="rg c" r="38"/>
+    <g class="rk"><path d="M-74-52v-22h22M52-74h22v22M74 52v22H52M-52 74h-22V52"/></g>
+    <path class="rx" d="M-8 0h16M0-8v16"/>
+  </svg>
+  <span class="rt mono">LOCK · 30 FPS</span>
+</div>
 <div class="pins" id="pins" aria-hidden="true">
-  <div class="pin" data-part="body12167" data-pt="0,0.018,-0.039"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.shell">Coque polymère haute densité</span></div>
+  <div class="pin" data-part="body12167" data-edge="left"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.shell">Coque polymère haute densité</span></div>
   <div class="pin" data-part="body55189" data-pt="-0.088,-0.004,-0.031"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.sink">Radiateur aluminium CNC</span></div>
-  <div class="pin" data-part="body55189" data-pt="-0.035,-0.012,-0.031"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.pi">Raspberry Pi 5 · Edge NPU</span></div>
+  <div class="pin" data-part="body55189" data-pt="-0.035,-0.012,-0.031"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.pi">Raspberry Pi 5 · Edge AI</span></div>
 </div>
 
 <!-- ACTE 3 · ALERTE & PREUVE -->
@@ -247,6 +262,6 @@
 </footer>
 
 <script src="assets/vendor/lenis.min.js"></script>
-<script type="module" src="assets/js/main.js?v=27"></script>
+<script type="module" src="assets/js/main.js?v=28"></script>
 </body>
 </html>

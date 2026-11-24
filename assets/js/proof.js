@@ -53,12 +53,15 @@ export function initProof({ wrap, img, ov, ui, getLang = () => 'fr' }){
     ctx.moveTo(x + w, y + h - l); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w - l, y + h);
     ctx.moveTo(x + l, y + h); ctx.lineTo(x, y + h); ctx.lineTo(x, y + h - l); ctx.stroke();
   }
-  function chip(x, y, txt, bg, a, fs){
+  // pastille : fond sombre opaque + fine bordure de la couleur du cadre. Posée juste AU-DESSUS du cadre (y = bord bas de la pastille),
+  // elle recouvre proprement les textes incrustés dans la photo au lieu de se mélanger avec eux.
+  function chip(x, y, txt, col, a, fs){
     ctx.globalAlpha = onK * a;
     ctx.font = `700 ${fs}px "JetBrains Mono",monospace`;
-    const w = ctx.measureText(txt).width + 14, h = fs + 10;
-    ctx.fillStyle = bg; ctx.fillRect(x, y - h, w, h);
-    ctx.fillStyle = C.tx; ctx.fillText(txt, x + 7, y - 7);
+    const w = ctx.measureText(txt).width + 14, h = fs + 10, yy = Math.max(y, h + 2);
+    ctx.fillStyle = 'rgba(8,9,12,.9)'; ctx.fillRect(x, yy - h, w, h);
+    ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.strokeRect(x + .6, yy - h + .6, w - 1.2, h - 1.2);
+    ctx.fillStyle = col; ctx.fillText(txt, x + 7, yy - 7);
   }
   function draw(c){
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
@@ -80,16 +83,16 @@ export function initProof({ wrap, img, ov, ui, getLang = () => 'fr' }){
     // personne
     const pa = ease(seg(c, .25, .75)), [px, py, pw, ph] = scn.person, e = (1 - pa) * 14;
     bracket(px - e, py - e, pw + 2 * e, ph + 2 * e, C.cy, 30, pa);
-    chip(px, py + ph - 4, t.person, C.cy, pa, fs);
+    chip(px, py - 4, t.person, C.cy, pa, fs);
     // tête / casque
     const ha = ease(seg(c, .6, 1.05)), [hx, hy, hw, hh] = scn.head;
     bracket(hx - 6, hy - 6, hw + 12, hh + 12, col, 22, ha);
-    chip(hx - 6, hy + hh + 34, good ? t.helmetOk : t.helmetKo, col, ha, fs);
+    chip(hx - 6, hy - 10, good ? t.helmetOk : t.helmetKo, col, ha, fs);
     // mains / gants
     const ga = ease(seg(c, .9, 1.35));
     scn.hands.forEach((h, i) => {
       bracket(h[0] - 6, h[1] - 6, h[2] + 12, h[3] + 12, col, 14, ga);
-      if (i === 0) chip(h[0] - 6, h[1] + h[3] + 40, good ? t.glovesOk : t.glovesKo, col, ga, fs);
+      if (i === 0) chip(h[0] - 6, h[1] - 32, good ? t.glovesOk : t.glovesKo, col, ga, fs);
     });
     // visage : mosaïque instantanée puis pastille (le flou est déjà dans l'image : aucune identité)
     const fa = ease(seg(c, 1.25, 1.6)), [fx, fy, fr] = scn.face;

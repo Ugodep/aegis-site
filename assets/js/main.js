@@ -48,7 +48,7 @@ $$('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
 /* ============================ SCÈNE 3D ============================ */
 const canvas = $('#gl');
 let useBloom = false;
-let renderer, scene, camera, rig, model, beam, halo, dust, beamPts, beamSeed, composer, bloomComposer, ledLight;
+let renderer, scene, camera, rig, model, beam, halo, dust, beamPts, beamSeed, composer, bloomComposer, ledLight, floorGlow;
 const bloomL = new THREE.Layers(), darkMat = new THREE.MeshBasicMaterial({ color: 0x000000 }), saved = new Map();
 // faisceau optique : position (repère du GLB, mètres), direction, longueur, rayon. Réglé sur la lentille sous la visière.
 // Le modèle est normalisé au chargement (centré en 0,0,0 ; plus grande dimension = NORM mètres) : ces valeurs sont donc relatives
@@ -136,6 +136,14 @@ function initGL(){
   halo = new THREE.Mesh(new THREE.PlaneGeometry(13, 13), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(hc), transparent: true, depthWrite: false, fog: false }));
   halo.position.z = -4; scene.add(halo);
 
+  // sol studio : disque lumineux aplati sous le produit, dégradé radial → noir pur (aucun horizon), ancre le boîtier dans l'espace
+  const fc = document.createElement('canvas'); fc.width = fc.height = 256; const fx = fc.getContext('2d');
+  const fg = fx.createRadialGradient(128, 128, 0, 128, 128, 128);
+  fg.addColorStop(0, 'rgba(160,178,205,.30)'); fg.addColorStop(.28, 'rgba(110,125,150,.14)'); fg.addColorStop(.62, 'rgba(60,70,90,.04)'); fg.addColorStop(1, 'rgba(0,0,0,0)');
+  fx.fillStyle = fg; fx.fillRect(0, 0, 256, 256);
+  floorGlow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(fc), transparent: true, depthWrite: false, fog: false }));
+  floorGlow.renderOrder = -1; scene.add(floorGlow);
+
   rig = new THREE.Group(); scene.add(rig);
 
   // faisceau optique (étape 1) : cône volumétrique discret devant la lentille, en orange AEGIS
@@ -143,7 +151,7 @@ function initGL(){
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
     uniforms: { u: { value: 0 } },
     vertexShader: 'varying float vY;varying float vF;void main(){vY=position.y;vec4 mv=modelViewMatrix*vec4(position,1.);vec3 n=normalize(normalMatrix*normal);vF=abs(dot(n,normalize(-mv.xyz)));gl_Position=projectionMatrix*mv;}',
-    fragmentShader: 'varying float vY;varying float vF;uniform float u;void main(){float t=clamp((vY/' + BEAM.len.toFixed(4) + ')+.5,0.,1.);float a=u*.2*pow(1.-t,1.7)*smoothstep(0.,.9,vF);gl_FragColor=vec4(1.,.42,.08,a);}'
+    fragmentShader: 'varying float vY;varying float vF;uniform float u;void main(){float t=clamp((vY/' + BEAM.len.toFixed(4) + ')+.5,0.,1.);float a=u*.17*pow(1.-t,1.6)*smoothstep(0.,.14,t+.02)*pow(smoothstep(.18,1.,vF),1.6);gl_FragColor=vec4(1.,.42,.08,a);}'
   }));
   beam.geometry.translate(0, -BEAM.len / 2, 0);            // sommet à l'origine, ouverture vers -Y
   beam.position.set(...BEAM.pos); beam.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), new THREE.Vector3(...BEAM.dir).normalize());
@@ -151,7 +159,7 @@ function initGL(){
   // micro-particules qui glissent le long du faisceau
   const BN = 70; beamSeed = Float32Array.from({ length: BN * 3 }, () => Math.random());
   const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(BN * 3), 3));
-  beamPts = new THREE.Points(bg, new THREE.PointsMaterial({ color: 0xffb27a, size: .03, transparent: true, opacity: .8, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+  beamPts = new THREE.Points(bg, new THREE.PointsMaterial({ color: 0xffb27a, size: .015, transparent: true, opacity: .5, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
   beamPts.frustumCulled = false; beam.add(beamPts);
 
   // anneaux d'alerte (étape 3)
@@ -197,7 +205,7 @@ function initGL(){
 // passe de bloom sélectif : tout ce qui n'est pas sur la couche bloom est rendu en noir (il occulte, mais ne rayonne pas)
 function darken(o){
   if (o.isMesh && !bloomL.test(o.layers)){ saved.set(o, o.material); o.material = darkMat; }
-  else if ((o === dust || o === halo) && o.visible){ saved.set(o, true); o.visible = false; }
+  else if ((o === dust || o === halo || o === floorGlow) && o.visible){ saved.set(o, true); o.visible = false; }
 }
 function restore(){
   saved.forEach((v, o) => { if (v === true) o.visible = true; else o.material = v; });
@@ -234,6 +242,7 @@ const KEYS = [
   // Acte 0 : texte en haut, boîtier 3/4 dans la moitié basse
   K('#hero', .5, { py: -1.0, s: 1.0, rx: .42, ry: 3.78, ld: 1 }, { py: -.95, s: .66 }),
   // Acte 1 : plan rasant le long de la visière et de la lentille (boîtier à droite), puis glissement vers l'ouverture
+  K('#vision', 0, { px: 1.15, py: -.3, s: 1.2, rx: .35, ry: 4.1, bm: 1, ld: 1 }, { px: 0, py: .7, s: .75 }),
   K('#vision', .25, { px: .9, py: -.1, s: 1.3, rx: .3, ry: 4.25, bm: 1, ld: 1 }, { px: 0, py: .7, s: .75 }),
   K('#vision', .55, { lz: .85, px: 1.1, py: -.1, s: 2.8, rx: .1, ry: 4.6, bm: 1, ld: 1 }, { px: 0, py: .8, s: 1.5 }),
   K('#vision', .85, { fh: 1, px: 1.2, py: 0, s: 2.4, rx: .75, ry: 3.6, ld: 1 }, { px: 0, py: .8, s: 1.2 }),
@@ -241,6 +250,7 @@ const KEYS = [
   K('#architecture', .5, { xv: 1, px: 1.65, py: -.05, s: 1.05, rx: .3, ry: 3.45, ld: 1 }, { px: 0, py: .8, s: .7 }),
   K('#architecture', .78, { xv: 1, px: 1.65, py: -.05, s: 1.05, rx: .34, ry: 3.2, ld: 1 }, { px: 0, py: .8, s: .7 }),
   // Acte 3 : petit, quart supérieur gauche, LED qui pulse
+  K('#preuve', 0, { fw: 1, px: -1.5, py: .72, s: .9, rx: .55, ry: 3.95, al: 1, ld: 1 }, { fw: 1, px: 0, py: 1.2, s: .5 }),
   K('#preuve', .5, { fw: 1, px: -1.5, py: .72, s: .9, rx: .55, ry: 3.95, al: 1, ld: 1 }, { fw: 1, px: 0, py: 1.2, s: .5 }),
   // Acte 4 : au centre de la moitié haute, manipulable à 360°
   K('#boitier', .5, { px: 0, py: .78, s: .95, rx: .6, ry: 3.3 }, { py: 1.0, s: .66 }),
@@ -273,11 +283,11 @@ const tg = { ...BASE };
 let mx = 0, my = 0, smx = 0, smy = 0;
 addEventListener('pointermove', e => { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; }, { passive: true });
 
-const _v = new THREE.Vector3();
+const _v = new THREE.Vector3(), _lw = new THREE.Vector3(), _ld = new THREE.Vector3();
 
 const pinEls = $$('.pin').map(el => {
   const pt = (el.dataset.pt || '').split(',').map(Number);
-  return { el, part: el.dataset.part, pt: pt.length === 3 ? new THREE.Vector3(...pt) : null };
+  return { el, part: el.dataset.part, pt: pt.length === 3 ? new THREE.Vector3(...pt) : null, edge: el.dataset.edge === 'left', corners: null };
 });
 function updatePins(vis){
   const show = !isMobile() && innerWidth >= 1100 && vis > .01;
@@ -287,12 +297,33 @@ function updatePins(vis){
     const m = parts[p.part];
     if (!m || k < .01){ if (p.on){ p.el.style.opacity = 0; p.on = false; } return; }
     p.on = true;
-    _v.copy(p.pt || m.userData.c); m.localToWorld(_v); _v.project(camera);
-    const x = (_v.x * .5 + .5) * innerWidth, y = (-_v.y * .5 + .5) * innerHeight;
+    let x, y;
+    if (p.edge){
+      // ancre sur l'arête latérale extérieure : le coin de la boîte englobante le plus à gauche à l'écran (le libellé ne passe jamais derrière la coque)
+      if (!p.corners){ const b = m.geometry.boundingBox; p.corners = []; for (let i = 0; i < 8; i++) p.corners.push(new THREE.Vector3(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z)); }
+      let best = 1e9;
+      p.corners.forEach(c => { _v.copy(c); m.localToWorld(_v); _v.project(camera); const cx = (_v.x * .5 + .5) * innerWidth; if (cx < best){ best = cx; x = cx; y = (-_v.y * .5 + .5) * innerHeight; } });
+    } else {
+      _v.copy(p.pt || m.userData.c); m.localToWorld(_v); _v.project(camera);
+      x = (_v.x * .5 + .5) * innerWidth; y = (-_v.y * .5 + .5) * innerHeight;
+    }
     p.el.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`;
     p.el.style.setProperty('--w', Math.max(28, x - leader).toFixed(0) + 'px');
     p.el.style.opacity = k.toFixed(2);
   });
+}
+
+const reticle = $('#reticle');
+let retOn = false;
+function updateReticle(vis){
+  const k = vis > .01 ? clamp((st.lz - .25) / .45, 0, 1) * vis : 0;
+  if (k < .01){ if (retOn){ reticle.style.opacity = 0; retOn = false; } return; }
+  retOn = true;
+  _v.set(...BEAM.pos).applyMatrix4(rig.matrixWorld).project(camera);
+  const x = (_v.x * .5 + .5) * innerWidth, y = (-_v.y * .5 + .5) * innerHeight;
+  reticle.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`;
+  reticle.style.opacity = k.toFixed(2);
+  reticle.classList.toggle('lock', st.lz > .78);
 }
 
 const TAU = Math.PI * 2;
@@ -333,7 +364,7 @@ function renderGL(dt, y){
   const px = st.px, py = st.py, s = st.s;
   const vis = ready ? st.v : 0;
   canvas.style.opacity = vis.toFixed(3);
-  if (vis < .01 || !glOK) return;
+  if (vis < .01 || !glOK){ updatePins(0); updateReticle(0); return; }
 
   const bx = px, by = py + Math.sin(time * 1.1) * .004 * S0 * s;   // respiration ±0,004 m
   rig.position.set(bx, by, st.pz);
@@ -360,6 +391,9 @@ function renderGL(dt, y){
   if (hs && st.fh > .001){ _v.copy(hs.userData.c); hs.localToWorld(_v); focus(_v, st.fh); }
   // halo derrière le produit
   halo.position.x = rig.position.x * .7; halo.position.y = rig.position.y * .7;
+  floorGlow.position.set(rig.position.x, rig.position.y - (.36 + st.xv * .42) * s, rig.position.z - .6);
+  floorGlow.scale.set(4.4 * s, 1.2 * s, 1);
+  floorGlow.material.opacity = (1 - clamp(st.lz * 1.6, 0, 1)) * (1 - clamp(st.fh * .8, 0, .8));
   dust.rotation.y = time * .02; dust.position.y = (y * .0007) % 5; dust.position.z = st.pz * .5;
   // faisceau optique (étape 1)
   if (st.bm > .01){
@@ -368,12 +402,18 @@ function renderGL(dt, y){
       const t = (beamSeed[i * 3] + time * (.12 + beamSeed[i * 3 + 1] * .12)) % 1, a = beamSeed[i * 3 + 2] * 6.283, r = R * t * Math.sqrt(beamSeed[i * 3 + 1]);
       pa.setXYZ(i, Math.cos(a) * r, -t * L, Math.sin(a) * r);
     }
-    pa.needsUpdate = true; beamPts.material.opacity = .85 * st.bm;
+    pa.needsUpdate = true; beamPts.material.opacity = .55 * st.bm;
   }
   beam.visible = st.bm > .01; beam.material.uniforms.u.value = st.bm * (.75 + Math.sin(time * 1.6) * .15);
   // onde circulaire qui part de la LED
-  if (led) { _v.copy(led.userData.c); led.localToWorld(_v); { const ls = clamp(s / .9, .5, 1.6); ledLight.position.set(_v.x, _v.y + .45 * ls, _v.z + .7 * ls); } }
-  ledLight.intensity = ledK * (.45 + st.al * 2.6) * (isMobile() ? .45 : 1);
+  if (led) { _v.copy(led.userData.c); led.localToWorld(_v); {
+    const ls = clamp(s / .9, .5, 1.6);
+    _lw.set(...BEAM.pos).applyMatrix4(rig.matrixWorld);
+    _ld.set(...BEAM.dir).normalize().transformDirection(rig.matrixWorld);
+    ledLight.position.copy(_lw).addScaledVector(_ld, .3 * ls);   // devant la lentille avant
+    ledLight.distance = .95 * ls;                                  // portée courte : n'atteint pas le creux supérieur de la coque
+  } }
+  ledLight.intensity = ledK * (.5 + st.al * 2.0) * (isMobile() ? .5 : 1);
   rings.forEach((r, i) => {
     const ph = ((time * .8 + i / 3) % 1);
     r.position.copy(_v); r.position.z += .15;
@@ -384,7 +424,7 @@ function renderGL(dt, y){
   camera.lookAt(0, 0, 0);
   scene.updateMatrixWorld(true);
   if (composer && useBloom) renderBloom(); else renderer.render(scene, camera);
-  updatePins(vis);
+  updatePins(vis); updateReticle(vis);
 }
 
 /* ============================ UI : état du scroll ============================ */
@@ -393,7 +433,8 @@ const SEC_IDS = ['hero', 'vision', 'architecture', 'preuve', 'boitier', 'dossier
 const sections = SEC_IDS.map(id => $('#' + id));
 const acts = $$('.act');
 const navLinks = $$('.links a');
-let activeSec = -1;
+let activeSec = -1, shPrev = 0;
+const rail = $('#rail'), railLinks = $$('a', rail);
 const stageEl = $('#boitier'), exBtn = $('#exBtn');
 
 // Mesures de layout mises en cache : recalculées au resize / changement de langue, jamais par frame.
@@ -416,8 +457,12 @@ function updateUI(y){
     const nid = a === 0 ? null : '#' + SEC_IDS[a];
     navLinks.forEach(l => l.classList.toggle('on', l.getAttribute('href') === nid));
     acts.forEach((el, i) => el.classList.toggle('on', i === a));
+    railLinks.forEach((l, i) => l.classList.toggle('on', i === a));
+    rail.classList.toggle('off', a >= 5);
   }
   stageW = clamp(1 - Math.abs((M.stageC - y) - vh / 2) / (vh * .55), 0, 1);
+  const sh = 160 - ((y * .1) % 220);   // balayage lumineux des dégradés argentés, piloté par le scroll
+  if (Math.abs(sh - shPrev) > .8){ shPrev = sh; document.documentElement.style.setProperty('--sh', sh.toFixed(1) + '%'); }
 }
 
 /* ============================ révélations / compteurs ============================ */
@@ -496,6 +541,15 @@ form.addEventListener('submit', e => {
   location.href = `mailto:${TEAM_EMAIL}?subject=${encodeURIComponent('Demande de démo AEGIS — ' + nom)}&body=${encodeURIComponent(body)}`;
   formMsg.textContent = msg('ok'); formMsg.style.color = 'var(--ok)';
 });
+
+// titre du hero : entrée mot par mot, masquage vertical
+const h1 = $('#h1');
+function splitHero(){
+  const txt = h1.textContent.trim();
+  h1.setAttribute('aria-label', txt);
+  h1.innerHTML = txt.split(/\s+/).map((w, i) => `<span class="w" aria-hidden="true" style="--i:${i}"><span>${w}</span></span>`).join(' ');
+}
+splitHero(); onLang(splitHero);
 
 /* ============================ boîtier interactif ============================ */
 {
