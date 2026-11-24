@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from '../vendor/three/addons/loaders/GLTFLoader.js';
 import { toCreasedNormals } from '../vendor/three/addons/utils/BufferGeometryUtils.js';
 import { RoomEnvironment } from '../vendor/three/addons/environments/RoomEnvironment.js';
-import { initPPE } from './ppe3d.js?v=16';
-import { initI18n, getLang, hud as hudText, msg, onLang, fmtNum } from './i18n.js?v=16';
+import { initPPE } from './ppe3d.js?v=20';
+import { initI18n, getLang, hud as hudText, msg, onLang, fmtNum } from './i18n.js?v=20';
 
 /* ------------------------------------------------------------------ */
 const HIDE_PARTS = ['body69062', 'body935', 'body27961'];   // pièces du CAD masquées (splitter PoE hors position, optique, plaque)
@@ -16,6 +16,7 @@ const modelP = new Promise(r => { resolveModel = r; });   // modèle du boîtier
 
 const qs = new URLSearchParams(location.search);
 const SNAP = qs.has('snap');
+const DBG = (() => { const r = qs.get('rig'); return r ? r.split(',').map(Number) : null; })();   // debug pose : ?rig=px,py,rx,ry,s,lf,fw,bm,al
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -42,7 +43,9 @@ $$('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
 
 /* ============================ SCÈNE 3D ============================ */
 const canvas = $('#gl');
-let renderer, scene, camera, rig, model, scan;
+let renderer, scene, camera, rig, model, beam, halo;
+// faisceau optique : position (repère du GLB, mètres), direction, longueur, rayon. Réglé sur la lentille sous la visière.
+const BEAM = { pos: [.098, -.004, -.04], dir: [1, -.14, .22], len: .12, r: .034 };
 const parts = {};
 const rings = [];
 let glOK = false;
@@ -53,12 +56,13 @@ const EX = {
   body69062: [0, 16, 52], body935: [-54, -6, 0],  body67541: [0, -38, 0], body67406: [0, -44, 0],
   body67177: [0, -42, 0], body55342: [0, -42, 0], body67291: [0, -42, 0], body67583: [0, -42, 0]
 };
+// Palette « studio hardware » fidèle au rendu SolidWorks. L'orange AEGIS est réservé à la LED et au faisceau optique.
 const MAT = {
-  body12167: { color: 0xf24a00, roughness: .42, metalness: 0, clearcoat: .45, clearcoatRoughness: .3, envMapIntensity: .8 },
-  body31097: { color: 0x1d1f23, roughness: .45, metalness: .35 },
-  body55189: { color: 0x0c5238, roughness: .5, metalness: .35 },
-  body67541: { color: 0xc4c8cf, roughness: .25, metalness: 1 },
-  body67406: { color: 0x202228, roughness: .4, metalness: .2, emissive: 0xff5a00, emissiveIntensity: 0 }
+  body12167: { color: 0xcfd4dc, roughness: .34, metalness: .22, clearcoat: .25, clearcoatRoughness: .4, envMapIntensity: .6 },   // coque gris clair satiné
+  body31097: { color: 0x16181d, roughness: .42, metalness: .55 },                                                               // châssis + bloc optique, noir graphite anodisé
+  body55189: { color: 0x0d5c3e, roughness: .48, metalness: .1 },                                                                // Raspberry Pi 5 : vert PCB mat
+  body67541: { color: 0xd5dae2, roughness: .22, metalness: .9 },                                                                // radiateur aluminium brossé
+  body67406: { color: 0x202228, roughness: .4, metalness: .2, emissive: 0xff5a00, emissiveIntensity: 0 }                        // LED d'état
 };
 
 function buildScene(gltf){
@@ -84,7 +88,7 @@ function initGL(){
   } catch (e) { return false; }
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = .92;
+  renderer.toneMappingExposure = 1.15;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.setClearColor(0x000000, 0);
 
@@ -93,22 +97,32 @@ function initGL(){
   camera.position.set(0, 0, 6.5);
 
   scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), .04).texture;
-  const key = new THREE.DirectionalLight(0xfff4ea, 2.6); key.position.set(-3, 4, 5); scene.add(key);
-  const rimO = new THREE.PointLight(0xff7a30, 20, 14); rimO.position.set(4.2, 1.2, -2.5); scene.add(rimO);
-  const rimC = new THREE.PointLight(0x7fd0ff, 22, 16); rimC.position.set(-4.8, -1.0, -1.2); scene.add(rimC);
-  scene.add(new THREE.AmbientLight(0x303030, .8));
+  // éclairage studio 3 points : key blanche douce, rim froide rasante (arêtes, visière, relief), contre-jour chaud discret
+  const key = new THREE.DirectionalLight(0xffffff, 1.5); key.position.set(-3, 4, 5); scene.add(key);
+  const rimC = new THREE.PointLight(0x7dd3fc, 26, 16); rimC.position.set(-4.6, 1.4, -1.6); scene.add(rimC);
+  const rimO = new THREE.PointLight(0xff5a00, 9, 14); rimO.position.set(4.6, -.4, -2.4); scene.add(rimO);
+  scene.add(new THREE.AmbientLight(0x2a2e36, .45));
+
+  // halo radial doux derrière le produit (suit le boîtier) ; aucun décor autour
+  const hc = document.createElement('canvas'); hc.width = hc.height = 256; const hx = hc.getContext('2d');
+  const hg = hx.createRadialGradient(128, 128, 0, 128, 128, 128);
+  hg.addColorStop(0, 'rgba(125,211,252,.20)'); hg.addColorStop(.35, 'rgba(70,110,150,.09)'); hg.addColorStop(1, 'rgba(5,6,8,0)');
+  hx.fillStyle = hg; hx.fillRect(0, 0, 256, 256);
+  halo = new THREE.Mesh(new THREE.PlaneGeometry(13, 13), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(hc), transparent: true, depthWrite: false }));
+  halo.position.z = -4; scene.add(halo);
 
   rig = new THREE.Group(); scene.add(rig);
 
-  // plan de scan (étape 2) : cadre fin, sans grille
-  scan = new THREE.Mesh(new THREE.PlaneGeometry(.275, .19), new THREE.ShaderMaterial({
+  // faisceau optique (étape 1) : cône volumétrique discret devant la lentille, en orange AEGIS
+  beam = new THREE.Mesh(new THREE.ConeGeometry(BEAM.r, BEAM.len, 40, 1, true), new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
     uniforms: { u: { value: 0 } },
-    vertexShader: 'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-    fragmentShader: 'varying vec2 vUv;uniform float u;void main(){vec2 c=abs(vUv-.5)*2.;float b=smoothstep(.93,1.,max(c.x,c.y));gl_FragColor=vec4(vec3(.16,.71,.96),(.015+b*.85)*u);}'
+    vertexShader: 'varying float vY;void main(){vY=position.y;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+    fragmentShader: 'varying float vY;uniform float u;void main(){float t=clamp((vY/' + BEAM.len.toFixed(4) + ')+.5,0.,1.);gl_FragColor=vec4(1.,.35,0.,u*.26*(1.-t)*(1.-t));}'
   }));
-  scan.rotation.x = -Math.PI / 2; scan.position.z = -.03;
-  rig.add(scan);
+  beam.geometry.translate(0, -BEAM.len / 2, 0);            // sommet à l'origine, ouverture vers -Y
+  beam.position.set(...BEAM.pos); beam.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), new THREE.Vector3(...BEAM.dir).normalize());
+  beam.visible = false; rig.add(beam);
 
   // anneaux d'alerte (étape 3)
   for (let i = 0; i < 3; i++){
@@ -130,28 +144,30 @@ function resizeGL(){
 
 /* ============================ KEYFRAMES (scroll → 3D) ============================ */
 const S0 = 11;
-const BASE = { px: 1.4, py: -.05, pz: 0, rx: .55, ry: 3.7, rz: 0, s: .8, ex: 0, al: 0, sc: 0, v: 1, m: 1, mv: 1 };
+// lf = coque soulevée (vue éclatée de la coque seule), fw = cadrage sur la LED, bm = faisceau optique
+const BASE = { px: 1.4, py: -.05, pz: 0, rx: .55, ry: 3.7, rz: 0, s: .8, ex: 0, al: 0, sc: 0, v: 1, m: 1, mv: 1, lf: 0, fw: 0, bm: 0, my: 0 };   // my = décalage vertical supplémentaire en mobile (carte glass compacte en bas)
 const K = (sec, f, o = {}, pin = false) => ({ sec, f, pin, ...BASE, ...o });
 const KEYS = [
   K('#hero', .5, {}),
   K('#manifeste', .25, { px: 1.0, ry: 2.8, rx: .3, s: .6, v: 0 }),
   K('#terrain', .9, { v: 0 }),
-  K('#solution', 0, { px: 1.45, s: .8, ry: 3.5 }, true),
-  K('#solution', .17, { px: 1.45, s: .8, ry: 3.3 }, true),
-  K('#solution', .31, { px: 1.0, s: .74, ex: 1, sc: 1, rx: .62, ry: 3.6 }, true),
-  K('#solution', .46, { px: 1.0, s: .74, ex: 1, sc: 1, rx: .62, ry: 4.2 }, true),
-  K('#solution', .59, { px: 1.45, s: .8, ex: 0, al: 1, rx: .5, ry: 3.7 }, true),
-  K('#solution', .74, { px: 1.45, s: .8, ex: 0, al: 1, rx: .45, ry: 3.25 }, true),
-  K('#solution', .9, { px: 2.6, py: 1.3, pz: -1.8, s: .5, al: 0, ry: 3.2, v: .9 }, true),
-  K('#solution', 1, { px: 2.6, py: 1.3, pz: -1.8, s: .5, al: 0, ry: 3.5, v: .9 }, true),
-  K('#solution', 1.04, { px: 2.6, py: 1.3, pz: -1.8, s: .5, ry: 3.5, v: 0 }, true),
+  // 4 temps dans #solution : 01 (0–25 %) plan 3/4 + faisceau · 02 (25–55 %) coque soulevée · 03 (55–80 %) gros plan LED · 04 (80–100 %) coque refermée
+  K('#solution', 0, { px: 1.3, s: .95, rx: .35, ry: 3.75, bm: 1 }, true),
+  K('#solution', .22, { px: 1.3, s: 1, rx: .4, ry: 3.95, bm: 1 }, true),
+  K('#solution', .32, { px: 1.2, s: .9, rx: .72, ry: 3.5, lf: 1 }, true),
+  K('#solution', .52, { px: 1.2, s: .92, rx: .78, ry: 3.15, lf: 1 }, true),
+  K('#solution', .62, { px: .45, s: 2.1, rx: .5, ry: 3.35, lf: 1, fw: 1, al: 1 }, true),
+  K('#solution', .77, { px: .45, s: 2.1, rx: .5, ry: 3.2, lf: 1, fw: 1, al: 1 }, true),
+  K('#solution', .84, { px: .15, s: .66, rx: .45, ry: 3.45, my: .5 }, true),
+  K('#solution', .96, { px: .15, s: .66, rx: .45, ry: 3.6, my: .5 }, true),
+  K('#solution', 1.04, { px: .15, s: .66, rx: .45, ry: 3.6, my: .5, v: 0 }, true),
   K('#stage', -.1, { px: 0, py: 0, rx: .6, ry: 3.3, s: .95, m: 0, v: 0 }),
   K('#stage', .2, { px: 0, py: 0, rx: .6, ry: 3.3, s: .95, m: 0, v: 1 }),
   K('#stage', .85, { px: 0, py: 0, rx: .6, ry: 3.3, s: .95, m: 0, v: 1 }),
   K('#stage', 1.15, { px: 0, py: 0, rx: .6, ry: 3.3, s: .95, m: 0, v: 0 }),
   K('#preuve', .3, { v: 0 }),
 ];
-const PROPS = ['px', 'py', 'pz', 'rx', 'ry', 'rz', 's', 'ex', 'al', 'sc', 'v', 'm', 'mv'];
+const PROPS = ['px', 'py', 'pz', 'rx', 'ry', 'rz', 's', 'ex', 'al', 'sc', 'v', 'm', 'mv', 'lf', 'fw', 'bm', 'my'];
 let anchors = [];
 function computeAnchors(){
   const vh = innerHeight, sy = window.scrollY;
@@ -186,7 +202,7 @@ function updateTags(vis){
     _v.copy(m.userData.c); m.localToWorld(_v); _v.project(camera);
     const x = (_v.x * .5 + .5) * innerWidth, y = (-_v.y * .5 + .5) * innerHeight;
     el.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`;
-    el.style.opacity = clamp((st.ex - .55) / .45, 0, 1) * vis;
+    el.style.opacity = Math.max(clamp((st.ex - .55) / .45, 0, 1), clamp((st.lf - .55) / .45, 0, 1)) * (1 - clamp(st.fw * 2.2, 0, 1)) * vis;
   });
 }
 
@@ -217,37 +233,51 @@ function stepAnims(dt){
 function renderGL(dt, y){
   stepAnims(dt);
   targetAt(y, tg);
-  tg.ex = Math.max(tg.ex, userEx * stageW); tg.sc = Math.max(tg.sc, userEx * stageW * .7);
+  tg.ex = Math.max(tg.ex, userEx * stageW);
   const k = SNAP ? 1 : 1 - Math.exp(-dt * (ready ? 6.5 : 2.4));
   PROPS.forEach(p => st[p] += (tg[p] - st[p]) * k);
+  if (DBG){ const [a, b, c, d, e, f = 0, g = 0, h = 0, i = 0] = DBG; Object.assign(st, { px: a, py: b, rx: c, ry: d, s: e, lf: f, fw: g, bm: h, al: i, v: 1, m: 0, ex: 0 }); }
 
   const mob = isMobile();
   smx += (mx - smx) * (1 - Math.exp(-dt * 4)); smy += (my - smy) * (1 - Math.exp(-dt * 4));
   const mw = mob ? st.m : 0;
-  const px = st.px * (1 - .88 * mw), py = st.py + .95 * mw, s = st.s * (1 - .48 * mw);
+  const px = st.px * (1 - .88 * mw), py = st.py + (.95 + st.my) * mw, s = st.s * (1 - .48 * mw);
   const vis = ready ? st.v * (mob ? st.mv : 1) : 0;
   canvas.style.opacity = vis.toFixed(3);
   if (vis < .01 || !glOK){ tagEls.forEach(el => { el.style.opacity = 0; }); return; }
 
-  rig.position.set(px, py + Math.sin(time * .9) * .035, st.pz);
+  const bx = px, by = py + Math.sin(time * .9) * .035;
+  rig.position.set(bx, by, st.pz);
   if (!dragging && !rstAnim){ yawV *= .94; yawO += yawV; if (stageW < .05){ const tgt = Math.round(yawO / TAU) * TAU; yawO += (tgt - yawO) * .08; pitO += (0 - pitO) * .08; } }
   rig.rotation.set(st.rx + pitO + smy * .12, st.ry + yawO + Math.sin(time * .45) * .1 + smx * .28, st.rz);
   rig.scale.setScalar(S0 * s);
 
-  const ex = st.ex;
-  for (const n in parts){ const m = parts[n]; m.position.copy(m.userData.ex).multiplyScalar(ex); }
+  const ex = st.ex, lf = st.lf;
+  for (const n in parts){ const m = parts[n]; m.position.copy(m.userData.ex).multiplyScalar(ex); m.rotation.x = 0; }
+  const shell = parts.body12167;                      // vue éclatée de la coque seule : montée verticale (+Y) avec léger tilt
+  if (shell){ shell.position.y += lf * .1; shell.rotation.x = -lf * .2; }
+  if (parts.body31097) parts.body31097.position.y -= lf * .03;   // le châssis descend un peu : les annotations ne se chevauchent plus
   const led = parts.body67406;
-  if (led) led.material.emissiveIntensity = st.al * (1.5 + Math.sin(time * 14) * 1.2) + st.sc * .5;
+  if (led) led.material.emissiveIntensity = st.al * (1.5 + Math.sin(time * 14) * 1.2);
 
-  scan.material.uniforms.u.value = st.sc * .8;
-  scan.position.y = Math.sin(time * 1.5) * .045 + .005;
-  scan.scale.setScalar(1 + ex * .08);
-
+  // cadrage : la LED vient se placer au point visé (px, py)
+  rig.updateMatrixWorld(true);
+  if (led && st.fw > .001){
+    _v.copy(led.userData.c); led.localToWorld(_v);
+    rig.position.x -= (_v.x - bx) * st.fw; rig.position.y -= (_v.y - by) * st.fw; rig.position.z -= (_v.z - st.pz) * st.fw;
+    rig.updateMatrixWorld(true);
+  }
+  // halo derrière le produit
+  halo.position.x = rig.position.x * .7; halo.position.y = rig.position.y * .7;
+  // faisceau optique (étape 1)
+  beam.visible = st.bm > .01; beam.material.uniforms.u.value = st.bm * (.75 + Math.sin(time * 1.6) * .15);
+  // onde circulaire qui part de la LED
+  if (led) { _v.copy(led.userData.c); led.localToWorld(_v); }
   rings.forEach((r, i) => {
     const ph = ((time * .8 + i / 3) % 1);
-    r.position.copy(rig.position); r.position.z += .3;
-    r.scale.setScalar((.35 + ph * 1.5) * (s > .7 ? 1 : s + .3));
-    r.material.opacity = st.al * Math.pow(1 - ph, 1.6) * .8;
+    r.position.copy(_v); r.position.z += .15;
+    r.scale.setScalar((.3 + ph * 1.5) * clamp(s * .75, .5, 1.6));
+    r.material.opacity = st.al * Math.pow(1 - ph, 1.6) * .85;
     r.visible = st.al > .01;
   });
   camera.lookAt(0, 0, 0);
@@ -264,8 +294,10 @@ const NAV_IDS = ['constat', 'solution', 'boitier', 'preuve', 'roi', 'ethique', '
 const owner = (idx, set) => { for (let i = idx; i >= 0; i--) if (set.includes(SEC_IDS[i])) return SEC_IDS[i]; return null; };
 const navLinks = $$('.links a');
 let activeSec = -1;
-const stepEls = $$('.step'), hudEl = $('#hud'), hudN = $('#hudN'), hudT = $('#hudT'), report = $('#report');
-let curStep = -1;
+const stepEls = $$('.step'), hudEl = $('#hud'), hudN = $('#hudN'), hudT = $('#hudT');
+const megaEl = $('#mega'), megaSp = $$('#mega span'), studioEl = $('#studio'), gYolo = $('#gYolo'), gBento = $('#gBento');
+const STEP_AT = [0, .25, .55, .80, 1];   // 01 plug & play · 02 coque soulevée · 03 LED / alerte · 04 rapports QSE
+let curStep = -1, inSolPrev = false;
 const solution = $('#solution');
 const stageEl = $('#stage'), exBtn = $('#exBtn');
 const scrubs = [];
@@ -301,16 +333,18 @@ function updateUI(y){
   });
   const top = M.solTop, H = M.solH;
   const p = clamp((y - top) / H, 0, 1);
-  const si = Math.min(3, Math.floor(p * 4 + .0001));
+  let si = 0; while (si < 3 && p >= STEP_AT[si + 1] - .0001) si++;
   stepEls.forEach((el, i) => {
-    el.style.setProperty('--p', clamp(p * 4 - i, 0, 1).toFixed(3));
+    el.style.setProperty('--p', clamp((p - STEP_AT[i]) / (STEP_AT[i + 1] - STEP_AT[i]), 0, 1).toFixed(3));
     el.classList.toggle('on', i === si);
   });
+  const inSol = y > top - vh * .6 && y < top + H + vh * .6;   // studio noir + typographie monumentale pendant #solution
+  if (inSol !== inSolPrev){ inSolPrev = inSol; megaEl.classList.toggle('show', inSol); studioEl.classList.toggle('show', inSol); }
   if (si !== curStep){
     curStep = si;
     hudN.textContent = '0' + (si + 1); hudT.textContent = hudText(si);
-    hudEl.classList.toggle('off', si === 3);
-    report.classList.toggle('on', si === 3);
+    megaSp.forEach((el, i) => el.classList.toggle('on', i === si));
+    gYolo.classList.toggle('on', si === 2); gBento.classList.toggle('on', si === 3);
   }
 }
 onLang(() => { if (curStep >= 0) hudT.textContent = hudText(curStep); });
@@ -340,7 +374,13 @@ $$('.rv').forEach(el => {
   el.style.setProperty('--d', (Math.min(sibs.indexOf(el), 4) * .07).toFixed(2) + 's');
   io.observe(el);
 });
-$$('.rvt').forEach(el => io.observe(el));   // titres : révélation par masque vertical
+// titres : révélation par masque vertical. On observe le PARENT (un élément masqué par son propre
+// clip-path n'est jamais considéré comme intersectant par l'IntersectionObserver).
+const ioT = new IntersectionObserver(es => es.forEach(e => {
+  if (!e.isIntersecting) return;
+  $$('.rvt', e.target).forEach(h => h.classList.add('in')); ioT.unobserve(e.target);
+}), { threshold: .12, rootMargin: '0px 0px -6% 0px' });
+new Set($$('.rvt').map(h => h.parentElement)).forEach(p => ioT.observe(p));
 
 // spotlight + bordure lumineuse : variables CSS mises à jour uniquement pendant le survol
 if (matchMedia('(hover:hover) and (pointer:fine)').matches && !reduced){

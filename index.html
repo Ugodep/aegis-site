@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js"}}</script>
-<link rel="stylesheet" href="assets/css/style.css?v=14">
+<link rel="stylesheet" href="assets/css/style.css?v=20">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"AEGIS Pro Tech","description":"Détection d'EPI par IA embarquée sur les caméras existantes. Privacy by Design.","parentOrganization":{"@type":"CollegeOrUniversity","name":"Faculté Polytechnique de Mons (UMONS)"}}</script>
 </head>
 <body>
@@ -26,6 +26,8 @@
   <div class="ld-txt mono"><span id="ldPct">0</span>%</div>
 </div>
 
+<div id="studio" aria-hidden="true"></div>
+<div id="mega" aria-hidden="true"><span class="on" data-i18n="mega.1">PLUG &amp; PLAY</span><span data-i18n="mega.2">IA EMBARQUÉE · 30 FPS</span><span data-i18n="mega.3">ALERTE LOCALE</span><span data-i18n="mega.4">ZÉRO DONNÉE</span></div>
 <canvas id="gl" aria-hidden="true"></canvas>
 <div class="tags" id="tags" aria-hidden="true">
   <div class="part-tag" data-part="body12167"><i></i><span class="mono" data-i18n="tag.shell">Coque · imprimée en 3D (PLA)</span></div>
@@ -161,11 +163,22 @@
       </div>
       <div class="pin-r">
         <div class="hud mono" id="hud"><span id="hudN">01</span><i></i><span id="hudT">FLUX CAMÉRA → BOÎTIER</span></div>
-        <figure class="report" id="report">
-          <figcaption class="mono"><span data-i18n="rp.t">Dashboard · tableau journalier</span><em data-i18n="rp.ex">capture du prototype</em></figcaption>
-          <img src="assets/img/dashboard.jpg?v=9" alt="Tableau journalier du dashboard AEGIS : alertes du jour, types d'infractions, zones touchées" width="1014" height="699" loading="lazy">
-          <p class="mono" data-i18n="rp.f">Aucune identité · aucune image · statistiques uniquement</p>
-        </figure>
+        <div class="glass g-yolo" id="gYolo" aria-hidden="true">
+          <span class="g-badge mono" data-i18n="g.badge">VISAGE FLOUTÉ · 0 ms</span>
+          <div class="g-pair">
+            <figure><img src="assets/img/yolo-avec.jpg?v=9" alt="" loading="lazy" decoding="async"><figcaption class="mono" data-i18n="seg.on">AVEC AEGIS</figcaption></figure>
+            <figure><img src="assets/img/yolo-sans.jpg?v=9" alt="" loading="lazy" decoding="async"><figcaption class="mono" data-i18n="seg.off">SANS AEGIS</figcaption></figure>
+          </div>
+        </div>
+        <div class="glass g-bento" id="gBento" aria-hidden="true">
+          <p class="g-t mono"><i></i><span data-i18n="g.b0">Flux QSE · anonyme</span></p>
+          <div class="g-grid">
+            <div class="g-c g-wide"><span class="mono" data-i18n="g.b1">Zone B · 10:15</span></div>
+            <div class="g-c"><small class="mono">EPI</small><b data-i18n="g.b2">Casque manquant</b></div>
+            <div class="g-c g-or"><small class="mono">LOCAL</small><b data-i18n="g.b3">Signal local activé</b></div>
+            <div class="g-c g-ok g-wide"><b data-i18n="g.b4">0 image stockée</b></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -440,6 +453,6 @@
 </footer>
 
 <script src="assets/vendor/lenis.min.js"></script>
-<script type="module" src="assets/js/main.js?v=16"></script>
+<script type="module" src="assets/js/main.js?v=20"></script>
 </body>
 </html>

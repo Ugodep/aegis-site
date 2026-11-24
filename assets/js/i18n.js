@@ -1,5 +1,7 @@
 // FR (défaut, lu depuis le HTML) / EN
 const EN = {
+  'mega.1':'PLUG &amp; PLAY','mega.2':'EDGE AI · 30 FPS','mega.3':'LOCAL ALERT','mega.4':'ZERO DATA',
+  'g.badge':'FACE BLURRED · 0 ms','g.b0':'HSE feed · anonymous','g.b1':'Zone B · 10:15','g.b2':'Missing helmet','g.b3':'Local signal on','g.b4':'0 images stored',
   'tag.shell':'Shell · 3D printed (PLA)','tag.board':'Raspberry Pi 5 + cooling','tag.base':'Vented base plate',
   'nav.constat':'The problem','nav.solution':'Solution','nav.boitier':'The device','nav.preuve':'Proof','nav.ethique':'Ethics','nav.equipe':'Team',
   'cta.demo':'Request a demo','cta.how':'How it works',

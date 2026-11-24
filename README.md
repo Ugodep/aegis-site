@@ -18,3 +18,10 @@ Déposer le dossier tel quel sur Netlify Drop / Cloudflare Pages / GitHub Pages.
                         TEAM_EMAIL = destinataire du formulaire ; HIDE_PARTS = pièces du CAD masquées
 - assets/img/           captures de l'IA (visages floutés), rendus SolidWorks, dashboard
 - assets/boitier.glb    boîtier SolidWorks converti (.3MF)
+
+## Rendu « studio hardware » (#solution, hero, #boitier)
+Le boîtier flotte dans un fond noir (#050608) avec un halo radial ; palette fidèle au rendu SolidWorks (constante MAT dans main.js),
+l'orange AEGIS n'est utilisé que pour la LED (body67406) et le faisceau optique. Éclairage 3 points + ACES (exposition 1.15).
+Chorégraphie de #solution : clés KEYS (px, py, rx, ry, s + lf = coque soulevée, fw = cadrage sur la LED, bm = faisceau).
+Typographie monumentale : #mega ; cartes glassmorphism : #gYolo (étape 03) et #gBento (étape 04) ; textes FR/EN dans i18n.js.
+Debug pose : ?snap&at=solution:.7&rig=px,py,rx,ry,s,lf,fw,bm,al

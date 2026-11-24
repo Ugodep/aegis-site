@@ -147,7 +147,8 @@ export function initPPE({ wrap, gl, ov, ui, model }){
         if (!o.isMesh) return;
         if (HIDE.includes(o.name)){ o.visible = false; return; }
         o.geometry = toCreasedNormals(o.geometry, .62); o.castShadow = true;
-        const def = o.name === 'body12167' ? { color: 0xf24a00, roughness: .42, clearcoat: .45 } : o.name === 'body31097' ? { color: 0x1d1f23, roughness: .45, metalness: .35 } : o.name === 'body55189' ? { color: 0x0c5238, roughness: .5 } : o.name === 'body67406' ? { color: 0x202228, emissive: 0xff5a00, emissiveIntensity: 0 } : { color: 0xc4c8cf, roughness: .3, metalness: 1 };
+        // même palette « studio hardware » que la scène principale (orange réservé à la LED)
+        const def = o.name === 'body12167' ? { color: 0xcfd4dc, roughness: .34, metalness: .22, clearcoat: .25, clearcoatRoughness: .4 } : o.name === 'body31097' ? { color: 0x16181d, roughness: .42, metalness: .55 } : o.name === 'body55189' ? { color: 0x0d5c3e, roughness: .48, metalness: .1 } : o.name === 'body67406' ? { color: 0x202228, emissive: 0xff5a00, emissiveIntensity: 0 } : { color: 0xd5dae2, roughness: .22, metalness: .9 };
         o.material = new THREE.MeshPhysicalMaterial({ envMapIntensity: .8, ...def });
         if (o.name === 'body67406') led = o;
       });
