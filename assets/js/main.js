@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from '../vendor/three/addons/loaders/GLTFLoader.js';
 import { toCreasedNormals } from '../vendor/three/addons/utils/BufferGeometryUtils.js';
 import { RoomEnvironment } from '../vendor/three/addons/environments/RoomEnvironment.js';
-import { initPPE } from './ppe3d.js?v=22';
+import { initProof } from './proof.js?v=23';
 import { initI18n, getLang, hud as hudText, msg, onLang, fmtNum } from './i18n.js?v=20';
 
 /* ------------------------------------------------------------------ */
@@ -11,8 +11,6 @@ const TEAM_EMAIL = 'ugo.deproote@student.umons.ac.be';      // ← destinataire 
 /* ------------------------------------------------------------------ */
 
 const GLB_URL = 'assets/boitier.glb?v=14';
-let resolveModel;
-const modelP = new Promise(r => { resolveModel = r; });   // modèle du boîtier partagé avec ppe3d.js
 
 const qs = new URLSearchParams(location.search);
 const SNAP = qs.has('snap');
@@ -302,7 +300,7 @@ let curStep = -1, inSolPrev = false;
 const solution = $('#solution');
 const stageEl = $('#stage'), exBtn = $('#exBtn');
 const scrubs = [];
-let ppe = null, cursorTick = null;   // pilotés par la boucle rAF unique (voir loop())
+let proof = null, cursorTick = null;   // pilotés par la boucle rAF unique (voir loop())
 
 // Mesures de layout mises en cache : recalculées au resize / changement de langue, jamais par frame.
 const M = { secTops: [], stageC: 0, scrubs: [], solTop: 0, solH: 1, doc: 1 };
@@ -458,22 +456,26 @@ function splitScrub(){
 splitScrub();
 onLang(splitScrub);
 
-/* ============================ scène 3D « ce que voit le boîtier » ============================ */
+/* ============================ comparateur AVEC / SANS AEGIS (vraies captures terrain) ============================ */
 {
   const wrap = $('#cam3d'), stP = $('#stP'), stOk = $('#stOk'), stAl = $('#stAl'), camAlert = $('#camAlert'), camTime = $('#camTime'), camFps = $('#camFps');
   // n'écrit dans le DOM que si la valeur a changé (évite des dizaines de réécritures par seconde)
   const put = (el, v) => { if (el._v !== v){ el._v = v; el.textContent = v; } };
   let alertPrev = false;
-  ppe = initPPE({ wrap, gl: $('#ppeGl'), ov: $('#ppeOv'), model: modelP, ui: d => {
+  proof = initProof({ wrap, img: $('#cmpImg'), ov: $('#cmpOv'), getLang, ui: d => {
     put(stP, d.people); put(stOk, d.ok); put(stAl, d.alerts); put(camFps, d.fps);
     if (d.alertOn !== alertPrev){ alertPrev = d.alertOn; camAlert.classList.toggle('on', d.alertOn); }
     put(camTime, new Date().toTimeString().slice(0, 8));
   } });
-  new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? ppe.start() : ppe.stop()), { threshold: .08 }).observe(wrap);
+  new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? proof.start() : proof.stop()), { threshold: .08 }).observe(wrap);
   $$('#seg button').forEach(b => b.addEventListener('click', () => {
     const onMode = b.dataset.m === '1';
     $$('#seg button').forEach(x => x.classList.toggle('on', x === b));
-    wrap.classList.toggle('off', !onMode); ppe.setOn(onMode);
+    wrap.classList.toggle('off', !onMode); proof.setOn(onMode);
+  }));
+  $$('#cmpScn button').forEach(b => b.addEventListener('click', () => {
+    $$('#cmpScn button').forEach(x => x.classList.toggle('on', x === b));
+    proof.setScenario(b.dataset.s);
   }));
 }
 
@@ -529,19 +531,17 @@ function loop(now){
   if (document.hidden === false){
     if (PERF){ const t0 = performance.now(); renderGL(dt, y); PERF.t += performance.now() - t0; PERF.n++; window.__perf = PERF; window.__aegis = { renderer, camera, rig, parts, st }; }
     else renderGL(dt, y);
-    if (ppe && ppe.running) ppe.frame(now);   // scène « preuve » : rendue dans la même boucle, seulement si visible
+    if (proof && proof.running) proof.frame(now);   // comparateur #preuve : dans la même boucle, seulement si visible
   }
   cursorTick && cursorTick();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 
-// Le GLB n'est téléchargé qu'une seule fois : la scène principale utilise l'original, la scène « preuve » un clone.
 new GLTFLoader().loadAsync(GLB_URL, e => { if (e.lengthComputable) setPct(e.loaded / e.total * 90); })
   .then(g => {
-    resolveModel(g.scene.clone(true));
     if (glOK) buildScene(g);
     setPct(100);
     Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 2500))]).then(() => setTimeout(start, 300));
   })
-  .catch(err => { console.error(err); resolveModel(null); glOK = false; start(); });
+  .catch(err => { console.error(err); glOK = false; start(); });

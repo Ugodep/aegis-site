@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js"}}</script>
-<link rel="stylesheet" href="assets/css/style.css?v=20">
+<link rel="stylesheet" href="assets/css/style.css?v=23">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"AEGIS Pro Tech","description":"Détection d'EPI par IA embarquée sur les caméras existantes. Privacy by Design.","parentOrganization":{"@type":"CollegeOrUniversity","name":"Faculté Polytechnique de Mons (UMONS)"}}</script>
 </head>
 <body>
@@ -230,20 +230,21 @@
     <div class="head">
       <p class="kicker mono rv"><span class="k">05</span> <span data-i18n="pr.k">Preuves</span></p>
       <h2 class="h2 rv" data-i18n="pr.h">Elle voit l'équipement. Jamais le visage.</h2>
-      <p class="lead rv" data-i18n="pr.p">Simulation 3D de ce que perçoit le boîtier : des objets et des situations, pas des identités. Regardez ce qui se passe quand un ouvrier retire son casque.</p>
+      <p class="lead rv" data-i18n="pr.p">Basculez entre AVEC et SANS AEGIS sur une vraie capture de notre prototype : des objets et des situations, pas des identités. Regardez ce qui se passe quand le casque est oublié.</p>
     </div>
-    <div class="cam3d rv" id="cam3d">
-      <canvas id="ppeGl" aria-label="Scène 3D : chantier surveillé par le boîtier AEGIS"></canvas>
-      <canvas id="ppeOv" aria-hidden="true"></canvas>
+    <div class="cam3d cmp rv" id="cam3d" data-scn="missing">
+      <img class="cmp-img" id="cmpImg" src="assets/img/yolo-sans.jpg?v=9" width="940" height="677" alt="Capture terrain du prototype AEGIS : personne sans casque ni gants, visage flouté" decoding="async">
+      <canvas id="cmpOv" aria-hidden="true"></canvas>
       <div class="seg mono" id="seg"><button class="on" data-m="1" data-i18n="seg.on">AVEC AEGIS</button><button data-m="0" data-i18n="seg.off">SANS AEGIS</button></div>
       <div class="cam-hud mono">
         <div class="tl"><span class="rec"></span> REC · CAM 03 · ZONE B</div>
         <div class="tr" id="camTime">--:--:--</div>
         <div class="bl"><span data-i18n="demo.local">TRAITEMENT 100 % LOCAL</span> · <span id="camFps">30</span> FPS</div>
-        <div class="br" data-i18n="demo.sim">SIMULATION 3D ILLUSTRATIVE</div>
+        <div class="br" data-i18n="demo.sim">CAPTURE TERRAIN · PROTOTYPE</div>
       </div>
       <div class="cam-alert" id="camAlert"><i></i><span class="mono" data-i18n="demo.alert">SIGNAL LOCAL ACTIVÉ</span></div>
       <div class="cam-note mono" data-i18n="seg.note">Sans AEGIS : l'oubli passe inaperçu.</div>
+      <div class="cmp-scn mono" id="cmpScn"><button class="on" data-s="missing" data-i18n="cmp.s1">Casque oublié</button><button data-s="equipped" data-i18n="cmp.s2">Équipé</button></div>
     </div>
     <div class="stats">
       <div class="stat rv"><span class="mono" data-i18n="demo.s1">Personnes analysées</span><b id="stP">0</b></div>
@@ -453,6 +454,6 @@
 </footer>
 
 <script src="assets/vendor/lenis.min.js"></script>
-<script type="module" src="assets/js/main.js?v=22"></script>
+<script type="module" src="assets/js/main.js?v=23"></script>
 </body>
 </html>

@@ -27,3 +27,7 @@ Typographie monumentale : #mega ; cartes glassmorphism : #gYolo (étape 03) et #
 Debug pose : ?snap&at=solution:.7&rig=px,py,rx,ry,s,lf,fw,bm,al
 
 Mesure du coût de rendu : ajouter ?perf à l'URL (expose window.__perf et window.__aegis : renderer.info, caméra, pièces).
+
+## #preuve : comparateur AVEC / SANS AEGIS
+assets/js/proof.js : overlay 2D animé (balayage, bounding boxes EPI, floutage visage, alerte, compteurs) sur les vraies captures yolo-avec.jpg / yolo-sans.jpg. Zones de détection = coordonnées image dans SCN. Textes FR/EN : TXT (proof.js) et i18n.js.
+Les captures contiennent déjà les boîtes du prototype : le mode SANS AEGIS les rend illisibles par un flou CSS (.cmp-img).
