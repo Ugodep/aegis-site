@@ -1,5 +1,8 @@
 // FR (défaut, lu depuis le HTML) / EN
 const EN = {
+  'pin.shell':'High-density polymer shell','pin.sink':'CNC aluminium heatsink','pin.pi':'Raspberry Pi 5 · Edge NPU',
+  'd.sim.cams':'Number of cameras equipped','d.sim.unit':'€3,800 per device','d.sim.inv':'AEGIS investment','d.sim.acc':'One serious accident avoided','d.sim.net':'Estimated net savings','d.sim.pay':'Payback','d.sim.mo':'months',
+  'd.p1':'IP camera','d.p2':'Local box · 0 ms blurring','d.p3':'Anonymous signal','d.p4':'✕ Cloud blocked',
   'nav.vision':'Vision','nav.archi':'Architecture','nav.preuve':'Proof','nav.boitier':'The device','nav.dossier':'Business file',
   'a0.k':'AEGIS PRO TECH · EDGE AI','a0.h':'Protect every gesture. Without ever watching.','a0.p':'Embedded artificial intelligence that secures your industrial sites in real time, 100% locally.','a0.b':'Discover the device ↓','a4.hint':'Drag to rotate · 360°','f.msg':'Message',
   'a1.h':'Edge AI Vision','a1.p':'Plug into your existing cameras. PPE detection in 30 ms.',
@@ -10,7 +13,7 @@ const EN = {
   'a4.s1':'Local server inside the box','a4.s2':'YOLO AI, PPE by PPE','a4.s3':'Web statistics interface',
   'd.k':'Business file','d.h':'The B2B file, on one page.',
   'd.n1':'work accidents per year in Belgium<small>Source: FEDRIS 2024</small>','d.n2':'average cost per serious accident','d.n3':'industrial pack of 10 devices',
-  'd.roi':'Return on investment','d.r1':'Cost of inaction · per year','d.r2':'AEGIS investment · pack of 10 devices','d.rn':'AEGIS team estimate, first year: a single avoided accident covers the subscription.',
+  'd.roi':'Return on investment','d.r1':'Cost of inaction · one serious accident','d.r2':'AEGIS investment','d.rn':'AEGIS team assumption: a single serious accident avoided per year, at €200,000. Indicative estimate.',
   'd.eth':'Ethics','d.eth1':'100% GDPR compliant','d.use':'Use cases','d.use1':'Factories &amp; construction sites',
   'd.team':'Team · F.P.Ms UMONS','d.faq':'Questions','d.ct':'Request a demo','ct.p2':'A demonstration or a pilot test on your site.',
   'mega.1':'PLUG &amp; PLAY','mega.2':'EDGE AI · 30 FPS','mega.3':'LOCAL ALERT','mega.4':'ZERO DATA',

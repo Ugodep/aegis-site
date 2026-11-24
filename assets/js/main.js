@@ -2,6 +2,11 @@ import * as THREE from 'three';
 import { GLTFLoader } from '../vendor/three/addons/loaders/GLTFLoader.js';
 import { toCreasedNormals } from '../vendor/three/addons/utils/BufferGeometryUtils.js';
 import { RoomEnvironment } from '../vendor/three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from '../vendor/three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from '../vendor/three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from '../vendor/three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from '../vendor/three/addons/postprocessing/OutputPass.js';
+import { ShaderPass } from '../vendor/three/addons/postprocessing/ShaderPass.js';
 import { initProof } from './proof.js?v=23';
 import { initI18n, getLang, msg, onLang, fmtNum } from './i18n.js?v=20';
 
@@ -42,11 +47,16 @@ $$('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
 
 /* ============================ SCÈNE 3D ============================ */
 const canvas = $('#gl');
-let renderer, scene, camera, rig, model, beam, halo, dust, beamPts, beamSeed;
+let useBloom = false;
+let renderer, scene, camera, rig, model, beam, halo, dust, beamPts, beamSeed, composer, bloomComposer, ledLight;
+const bloomL = new THREE.Layers(), darkMat = new THREE.MeshBasicMaterial({ color: 0x000000 }), saved = new Map();
 // faisceau optique : position (repère du GLB, mètres), direction, longueur, rayon. Réglé sur la lentille sous la visière.
 // Le modèle est normalisé au chargement (centré en 0,0,0 ; plus grande dimension = NORM mètres) : ces valeurs sont donc relatives
 // au centre de l'objet. Si le futur boitier.glb a l'optique ailleurs, il suffit d'ajuster BEAM.pos / BEAM.dir.
 const NORM = .225;
+// éclaté vertical de l'acte 2 (m) : coque +0,085 · carte Pi 5 + radiateur +0,025 · châssis -0,035
+const XV = { body12167: .085, body31097: -.035 };
+const ENV_I = .45;   // intensité de l'environnement studio (RoomEnvironment + PMREM) : reflets métalliques sur radiateur, chanfreins, châssis
 const BEAM = { pos: [.098, -.0015, -.021], dir: [1, -.14, .22], len: .12, r: .034 };
 const parts = {};
 const rings = [];
@@ -73,7 +83,7 @@ function buildScene(gltf){
     if (!o.isMesh) return;
     o.geometry = toCreasedNormals(o.geometry, .62);
     const def = MAT[o.name] || { color: 0x0f1115, roughness: .35, metalness: .6 };
-    o.material = new THREE.MeshPhysicalMaterial({ envMapIntensity: 1.1, ...def });
+    o.material = new THREE.MeshPhysicalMaterial({ ...def, envMapIntensity: ENV_I });
     o.userData.ex = new THREE.Vector3(...(EX[o.name] || [0, -30, 0])).multiplyScalar(.001);
     o.geometry.computeBoundingBox();
     o.userData.c = o.geometry.boundingBox.getCenter(new THREE.Vector3());
@@ -99,7 +109,7 @@ function initGL(){
   } catch (e) { return false; }
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
+  renderer.toneMappingExposure = 1.0;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.setClearColor(0x000000, 1);
 
@@ -115,11 +125,13 @@ function initGL(){
   const rimC = new THREE.PointLight(0x7dd3fc, 26, 16); rimC.position.set(-4.6, 1.4, -1.6); scene.add(rimC);
   const rimO = new THREE.PointLight(0xff5a00, 9, 14); rimO.position.set(4.6, -.4, -2.4); scene.add(rimO);
   scene.add(new THREE.AmbientLight(0x2a2e36, .45));
+  // lumière orange synchronisée sur la LED : elle éclaire réellement la courbe de la coque
+  ledLight = new THREE.PointLight(0xff5a00, 0, 5, 2); scene.add(ledLight);
 
   // halo radial doux derrière le produit (suit le boîtier) ; aucun décor autour
   const hc = document.createElement('canvas'); hc.width = hc.height = 256; const hx = hc.getContext('2d');
   const hg = hx.createRadialGradient(128, 128, 0, 128, 128, 128);
-  hg.addColorStop(0, 'rgba(125,211,252,.20)'); hg.addColorStop(.35, 'rgba(70,110,150,.09)'); hg.addColorStop(1, 'rgba(5,6,8,0)');
+  hg.addColorStop(0, 'rgba(125,211,252,.075)'); hg.addColorStop(.35, 'rgba(70,110,150,.03)'); hg.addColorStop(1, 'rgba(5,6,8,0)');
   hx.fillStyle = hg; hx.fillRect(0, 0, 256, 256);
   halo = new THREE.Mesh(new THREE.PlaneGeometry(13, 13), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(hc), transparent: true, depthWrite: false, fog: false }));
   halo.position.z = -4; scene.add(halo);
@@ -154,16 +166,58 @@ function initGL(){
   const dc = document.createElement('canvas'); dc.width = dc.height = 32; const dx = dc.getContext('2d');
   const dg = dx.createRadialGradient(16, 16, 0, 16, 16, 16); dg.addColorStop(0, 'rgba(255,255,255,1)'); dg.addColorStop(1, 'rgba(255,255,255,0)'); dx.fillStyle = dg; dx.fillRect(0, 0, 32, 32);
   const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  dust = new THREE.Points(pg, new THREE.PointsMaterial({ map: new THREE.CanvasTexture(dc), color: 0x9fd8ff, size: .07, transparent: true, opacity: .5, depthWrite: false, blending: THREE.AdditiveBlending }));
+  dust = new THREE.Points(pg, new THREE.PointsMaterial({ map: new THREE.CanvasTexture(dc), color: 0x9fd8ff, size: .06, transparent: true, opacity: .32, depthWrite: false, blending: THREE.AdditiveBlending }));
   scene.add(dust);
   beamPts.material.map = dust.material.map; beamPts.material.needsUpdate = true;
+  // bloom sélectif léger (seuil .88, force .38, rayon .45) : seuls la LED et le faisceau rayonnent, la coque reste nette.
+  // Désactivé sur écrans très denses (mobiles) pour tenir 60 FPS.
+  useBloom = (devicePixelRatio || 1) <= 2;
+  if (useBloom){
+    bloomL.set(1);
+    [parts.body67406, beam, beamPts].forEach(o => o && o.layers.enable(1));
+    rings.forEach(r => r.layers.enable(1));
+    bloomComposer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType }));
+    bloomComposer.renderToScreen = false;
+    bloomComposer.addPass(new RenderPass(scene, camera));
+    bloomComposer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), .38, .45, .88));
+    composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, samples: 4 }));
+    composer.addPass(new RenderPass(scene, camera));
+    const mix = new ShaderPass(new THREE.ShaderMaterial({
+      uniforms: { baseTexture: { value: null }, bloomTexture: { value: bloomComposer.renderTarget2.texture } },
+      vertexShader: 'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+      fragmentShader: 'uniform sampler2D baseTexture;uniform sampler2D bloomTexture;varying vec2 vUv;void main(){gl_FragColor=texture2D(baseTexture,vUv)+texture2D(bloomTexture,vUv);}'
+    }), 'baseTexture');
+    composer.addPass(mix);
+    composer.addPass(new OutputPass());
+  }
   resizeGL();
   return true;
+}
+
+// passe de bloom sélectif : tout ce qui n'est pas sur la couche bloom est rendu en noir (il occulte, mais ne rayonne pas)
+function darken(o){
+  if (o.isMesh && !bloomL.test(o.layers)){ saved.set(o, o.material); o.material = darkMat; }
+  else if ((o === dust || o === halo) && o.visible){ saved.set(o, true); o.visible = false; }
+}
+function restore(){
+  saved.forEach((v, o) => { if (v === true) o.visible = true; else o.material = v; });
+  saved.clear();
+}
+function renderBloom(){
+  const bg = scene.background; scene.background = null;
+  scene.traverse(darken);
+  bloomComposer.render();
+  restore(); scene.background = bg;
+  composer.render();
 }
 
 function resizeGL(){
   if (!renderer) return;
   renderer.setSize(innerWidth, innerHeight, false);
+  if (composer){
+    composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(innerWidth, innerHeight);
+    bloomComposer.setPixelRatio(renderer.getPixelRatio() * .5); bloomComposer.setSize(innerWidth, innerHeight);
+  }
   camera.aspect = innerWidth / innerHeight;
   camera.position.z = camera.aspect < 1 ? 7.4 : 6.5;
   camera.updateProjectionMatrix();
@@ -172,7 +226,7 @@ function resizeGL(){
 /* ============================ KEYFRAMES (scroll → 3D) ============================ */
 const S0 = 11;
 // lz = plongée dans la lentille · fh = macro sur le radiateur · fw = cadrage sur la LED · ld = LED allumée · lf = coque soulevée · bm = faisceau · al = onde d'alerte
-const BASE = { px: 0, py: 0, pz: 0, rx: .5, ry: 3.7, rz: 0, s: 1, ex: 0, al: 0, sc: 0, v: 1, lf: 0, fw: 0, bm: 0, lz: 0, fh: 0, ld: 0 };
+const BASE = { px: 0, py: 0, pz: 0, rx: .5, ry: 3.7, rz: 0, s: 1, ex: 0, al: 0, sc: 0, v: 1, lf: 0, fw: 0, bm: 0, lz: 0, fh: 0, ld: 0, xv: 0 };
 // K(section, fraction, desktop, mobile) : le dernier argument ne surcharge que le mobile (< 900 px)
 const K = (sec, f, o = {}, mob = {}) => ({ sec, f, ...BASE, ...o, mob });
 // Composition : le boîtier n'est jamais derrière le texte (texte à gauche → boîtier à droite, etc.).
@@ -184,15 +238,16 @@ const KEYS = [
   K('#vision', .55, { lz: .85, px: 1.1, py: -.1, s: 2.8, rx: .1, ry: 4.6, bm: 1, ld: 1 }, { px: 0, py: .8, s: 1.5 }),
   K('#vision', .85, { fh: 1, px: 1.2, py: 0, s: 2.4, rx: .75, ry: 3.6, ld: 1 }, { px: 0, py: .8, s: 1.2 }),
   // Acte 2 : boîtier éclaté dans la moitié droite, texte à gauche
-  K('#architecture', .5, { fh: 1, lf: 1, ex: .35, px: 1.45, py: -.05, s: 2.0, rx: .3, ry: 3.45 }, { px: 0, py: .85, s: 1.0 }),
-  K('#architecture', .78, { fh: 1, lf: 1, ex: .35, px: 1.45, py: -.05, s: 2.0, rx: .34, ry: 3.15 }, { px: 0, py: .85, s: 1.0 }),
+  K('#architecture', .5, { xv: 1, px: 1.65, py: -.05, s: 1.05, rx: .3, ry: 3.45, ld: 1 }, { px: 0, py: .8, s: .7 }),
+  K('#architecture', .78, { xv: 1, px: 1.65, py: -.05, s: 1.05, rx: .34, ry: 3.2, ld: 1 }, { px: 0, py: .8, s: .7 }),
   // Acte 3 : petit, quart supérieur gauche, LED qui pulse
-  K('#preuve', .5, { px: -1.5, py: .8, s: .5, rx: .45, ry: 3.65, al: 1, ld: 1 }, { px: 0, py: 1.25, s: .42 }),
+  K('#preuve', .5, { fw: 1, px: -1.5, py: .72, s: .9, rx: .55, ry: 3.95, al: 1, ld: 1 }, { fw: 1, px: 0, py: 1.2, s: .5 }),
   // Acte 4 : au centre de la moitié haute, manipulable à 360°
-  K('#boitier', .5, { px: 0, py: .78, s: .82, rx: .6, ry: 3.3 }, { py: 1.0, s: .6 }),
-  K('#dossier', .08, { px: 0, py: .78, s: .82, rx: .6, ry: 3.3, v: 0 }, { py: 1.0, s: .6 }),
+  K('#boitier', .5, { px: 0, py: .78, s: .95, rx: .6, ry: 3.3 }, { py: 1.0, s: .66 }),
+  // le canvas disparaît avant le dossier B2B : le boîtier ne passe jamais derrière le titre
+  K('#boitier', .92, { px: 0, py: .78, s: .95, rx: .6, ry: 3.3, v: 0 }, { py: 1.0, s: .66 }),
 ];
-const PROPS = ['px', 'py', 'pz', 'rx', 'ry', 'rz', 's', 'ex', 'al', 'sc', 'v', 'lf', 'fw', 'bm', 'lz', 'fh', 'ld'];
+const PROPS = ['px', 'py', 'pz', 'rx', 'ry', 'rz', 's', 'ex', 'al', 'sc', 'v', 'lf', 'fw', 'bm', 'lz', 'fh', 'ld', 'xv'];
 let anchors = [];
 function computeAnchors(){
   const vh = innerHeight, sy = window.scrollY;
@@ -219,6 +274,26 @@ let mx = 0, my = 0, smx = 0, smy = 0;
 addEventListener('pointermove', e => { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; }, { passive: true });
 
 const _v = new THREE.Vector3();
+
+const pinEls = $$('.pin').map(el => {
+  const pt = (el.dataset.pt || '').split(',').map(Number);
+  return { el, part: el.dataset.part, pt: pt.length === 3 ? new THREE.Vector3(...pt) : null };
+});
+function updatePins(vis){
+  const show = !isMobile() && innerWidth >= 1100 && vis > .01;
+  const k = show ? clamp((st.xv - .6) / .4, 0, 1) * vis : 0;
+  const leader = innerWidth * .56;
+  pinEls.forEach(p => {
+    const m = parts[p.part];
+    if (!m || k < .01){ if (p.on){ p.el.style.opacity = 0; p.on = false; } return; }
+    p.on = true;
+    _v.copy(p.pt || m.userData.c); m.localToWorld(_v); _v.project(camera);
+    const x = (_v.x * .5 + .5) * innerWidth, y = (-_v.y * .5 + .5) * innerHeight;
+    p.el.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`;
+    p.el.style.setProperty('--w', Math.max(28, x - leader).toFixed(0) + 'px');
+    p.el.style.opacity = k.toFixed(2);
+  });
+}
 
 const TAU = Math.PI * 2;
 let userEx = 0, stageW = 0, yawO = 0, yawV = 0, pitO = 0, dragging = false;
@@ -253,25 +328,28 @@ function renderGL(dt, y){
   if (DBG){ const [a, b, c, d, e, f = 0, g = 0, h = 0, i = 0] = DBG; Object.assign(st, { px: a, py: b, rx: c, ry: d, s: e, lf: f, fw: g, bm: h, al: i, v: 1, ex: 0 }); }
 
   const mob = isMobile();
-  smx += (mx - smx) * (1 - Math.exp(-dt * 4)); smy += (my - smy) * (1 - Math.exp(-dt * 4));
+  const pk = 1 - Math.exp(-dt * 3.8);   // ≈ lerp 0,06 par frame à 60 FPS
+  smx += ((dragging ? 0 : mx) - smx) * pk; smy += ((dragging ? 0 : my) - smy) * pk;
   const px = st.px, py = st.py, s = st.s;
   const vis = ready ? st.v : 0;
   canvas.style.opacity = vis.toFixed(3);
   if (vis < .01 || !glOK) return;
 
-  const bx = px, by = py + Math.sin(time * .9) * .035;
+  const bx = px, by = py + Math.sin(time * 1.1) * .004 * S0 * s;   // respiration ±0,004 m
   rig.position.set(bx, by, st.pz);
   if (!dragging && !rstAnim){ yawV *= .94; yawO += yawV; if (stageW < .05){ const tgt = Math.round(yawO / TAU) * TAU; yawO += (tgt - yawO) * .08; pitO += (0 - pitO) * .08; } }
   rig.rotation.set(st.rx + pitO + smy * .12, st.ry + yawO + Math.sin(time * .45) * .1 + smx * .28, st.rz);
   rig.scale.setScalar(S0 * s);
 
   const ex = st.ex, lf = st.lf;
-  for (const n in parts){ const m = parts[n]; m.position.copy(m.userData.ex).multiplyScalar(ex); m.rotation.x = 0; }
+  for (const n in parts){ const m = parts[n]; m.position.copy(m.userData.ex).multiplyScalar(ex); m.rotation.x = 0; if (st.xv > .001) m.position.y += st.xv * (XV[n] ?? .025); }
   const shell = parts.body12167;                      // vue éclatée de la coque seule : montée verticale (+Y) avec léger tilt
   if (shell){ shell.position.y += lf * .1; shell.rotation.x = -lf * .2; }
   if (parts.body31097) parts.body31097.position.y -= lf * .03;   // le châssis descend un peu : les annotations ne se chevauchent plus
   const led = parts.body67406;
-  if (led) led.material.emissiveIntensity = st.ld * (.9 + Math.sin(time * 2.4) * .25) + st.al * (1.2 + Math.sin(time * 14) * 1.1);
+  const pulse = .82 + .18 * Math.sin(time * (st.al > .5 ? 7 : 2.4));
+  const ledK = clamp(st.ld * .9 + st.al * .3, 0, 1) * pulse;
+  if (led) led.material.emissiveIntensity = 2.2 * ledK;   // bloom : seule la LED dépasse le seuil
 
   // cadrages : un point d'intérêt (lentille, LED, radiateur) vient se placer au point visé (px, py)
   rig.updateMatrixWorld(true);
@@ -294,7 +372,8 @@ function renderGL(dt, y){
   }
   beam.visible = st.bm > .01; beam.material.uniforms.u.value = st.bm * (.75 + Math.sin(time * 1.6) * .15);
   // onde circulaire qui part de la LED
-  if (led) { _v.copy(led.userData.c); led.localToWorld(_v); }
+  if (led) { _v.copy(led.userData.c); led.localToWorld(_v); { const ls = clamp(s / .9, .5, 1.6); ledLight.position.set(_v.x, _v.y + .45 * ls, _v.z + .7 * ls); } }
+  ledLight.intensity = ledK * (.45 + st.al * 2.6) * (isMobile() ? .45 : 1);
   rings.forEach((r, i) => {
     const ph = ((time * .8 + i / 3) % 1);
     r.position.copy(_v); r.position.z += .15;
@@ -304,7 +383,8 @@ function renderGL(dt, y){
   });
   camera.lookAt(0, 0, 0);
   scene.updateMatrixWorld(true);
-  renderer.render(scene, camera);
+  if (composer && useBloom) renderBloom(); else renderer.render(scene, camera);
+  updatePins(vis);
 }
 
 /* ============================ UI : état du scroll ============================ */
@@ -353,6 +433,20 @@ function countUp(el){
     if (t < 1) requestAnimationFrame(f);
   })(t0);
 }
+// simulateur ROI : 3 800 € / boîtier, un accident grave évité = 200 000 €
+{
+  const n = $('#roiN'), nv = $('#roiNv'), inv = $('#roiInv'), inv2 = $('#roiInv2'), acc = $('#roiAcc'), net = $('#roiNet'), pay = $('#roiPay'), bar = $('#roiBar');
+  const UNIT = 3800, ACC = 200000, eur = v => fmtNum(v) + ' €';
+  const sim = () => {
+    const c = +n.value, I = c * UNIT, N = ACC - I, mo = I / (ACC / 12);
+    n.style.setProperty('--p', ((c - 2) / 48 * 100).toFixed(1) + '%');
+    nv.textContent = c; inv.textContent = inv2.textContent = eur(I); acc.textContent = eur(ACC);
+    net.textContent = (N < 0 ? '−' : '') + eur(Math.abs(N));
+    pay.textContent = mo.toFixed(1).replace('.', getLang() === 'en' ? '.' : ',');
+    bar.style.setProperty('--w', Math.min(100, I / ACC * 100).toFixed(1) + '%');
+  };
+  n.addEventListener('input', sim); onLang(sim); sim();
+}
 // changement de langue : les nombres déjà affichés prennent le bon séparateur (128 939 ↔ 128,939)
 onLang(() => $$('[data-count]').forEach(el => { el.textContent = countText(el, +el.dataset.count); }));
 const io = new IntersectionObserver(es => es.forEach(e => {
@@ -375,7 +469,7 @@ new Set($$('.rvt').map(h => h.parentElement)).forEach(p => ioT.observe(p));
 
 // spotlight + bordure lumineuse : variables CSS mises à jour uniquement pendant le survol
 if (matchMedia('(hover:hover) and (pointer:fine)').matches && !reduced){
-  $$('.bc').forEach(el => {
+  $$('.bc, .fcard').forEach(el => {
     el.classList.add('spot');
     el.addEventListener('pointermove', e => {
       const r = el.getBoundingClientRect();

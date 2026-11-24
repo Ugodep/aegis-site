@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js"}}</script>
-<link rel="stylesheet" href="assets/css/style.css?v=26">
+<link rel="stylesheet" href="assets/css/style.css?v=27">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"AEGIS Pro Tech","description":"Détection d'EPI par IA embarquée sur les caméras existantes. Privacy by Design.","parentOrganization":{"@type":"CollegeOrUniversity","name":"Faculté Polytechnique de Mons (UMONS)"}}</script>
 </head>
 <body>
@@ -85,6 +85,12 @@
   </div>
 </section>
 
+<div class="pins" id="pins" aria-hidden="true">
+  <div class="pin" data-part="body12167" data-pt="0,0.018,-0.039"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.shell">Coque polymère haute densité</span></div>
+  <div class="pin" data-part="body55189" data-pt="-0.088,-0.004,-0.031"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.sink">Radiateur aluminium CNC</span></div>
+  <div class="pin" data-part="body55189" data-pt="-0.035,-0.012,-0.031"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.pi">Raspberry Pi 5 · Edge NPU</span></div>
+</div>
+
 <!-- ACTE 3 · ALERTE & PREUVE -->
 <section id="preuve" class="act a3">
   <div class="glass-win" id="proofWin">
@@ -96,12 +102,12 @@
         <div class="tr" id="camTime">--:--:--</div>
         <div class="bl"><span data-i18n="demo.local">TRAITEMENT 100 % LOCAL</span> · <span id="camFps">30</span> FPS</div>
       </div>
+      <span class="g-badge" data-i18n="g.badge">Visage flouté · 0 ms</span>
       <div class="cam-alert" id="camAlert"><i></i><span class="mono" data-i18n="demo.alert">SIGNAL LOCAL ACTIVÉ</span></div>
     </div>
     <div class="win-bar">
       <div class="ios" id="seg" data-v="0" role="group" aria-label="Avec ou sans Aegis"><button class="on" data-m="1" data-i18n="seg.on">Avec Aegis</button><button data-m="0" data-i18n="seg.off">Sans Aegis</button></div>
       <div class="ios" id="cmpScn" data-v="0" role="group" aria-label="Scénario"><button class="on" data-s="missing" data-i18n="cmp.s1">Casque oublié</button><button data-s="equipped" data-i18n="cmp.s2">Équipé</button></div>
-      <span class="g-badge" data-i18n="g.badge">Visage flouté · 0 ms</span>
     </div>
     <div class="stats">
       <div class="stat"><span data-i18n="demo.s1">Personnes analysées</span><b id="stP">0</b></div>
@@ -119,11 +125,10 @@
 
 <!-- ACTE 4 · INSPECTION 360° -->
 <section id="boitier" class="act a4" tabindex="0" role="group" aria-label="Modèle 3D interactif du boîtier AEGIS — flèches gauche/droite pour tourner" data-cursor="Glisser">
-  <span class="drag-badge" data-i18n="a4.hint">Glisser pour pivoter · 360°</span>
   <div class="a4-b">
     <div class="a4-row">
       <div>
-        <p class="act-k">04</p>
+        <span class="drag-badge" data-i18n="a4.hint">Glisser pour pivoter · 360°</span>
         <h2 class="act-h" data-i18n="a4.h">Conçu à l'UMONS</h2>
         <p class="act-p" data-i18n="a4.p">Faites-le tourner : c'est notre vrai modèle CAO.</p>
       </div>
@@ -152,13 +157,33 @@
       <div class="bc b-num b-or rv"><b data-count="38000" data-sep data-suf=" €">38 000 €</b><span data-i18n="d.n3">pack industriel de 10 boîtiers</span></div>
       <div class="bc b-roi rv" id="cmp">
         <h3 data-i18n="d.roi">Retour sur investissement</h3>
-        <div class="bar-row"><div class="bar-l"><span data-i18n="d.r1">Coût de l'inaction · par an</span><b>≈ 200 000 €</b></div><div class="bar"><i class="b1" style="--w:100%"></i></div></div>
-        <div class="bar-row"><div class="bar-l"><span data-i18n="d.r2">Investissement AEGIS · pack de 10 boîtiers</span><b class="or">38 000 €</b></div><div class="bar"><i class="b2" style="--w:19%"></i></div></div>
-        <p class="note" data-i18n="d.rn">Estimation de l'équipe AEGIS, première année : un seul accident évité couvre l'abonnement.</p>
+        <div class="sim">
+          <div class="sim-in">
+            <label for="roiN" data-i18n="d.sim.cams">Nombre de caméras équipées</label>
+            <div class="sim-ctl"><input type="range" id="roiN" min="2" max="50" step="1" value="10"><output id="roiNv" for="roiN">10</output></div>
+            <small data-i18n="d.sim.unit">3 800 € par boîtier</small>
+          </div>
+          <div class="sim-out">
+            <div><span data-i18n="d.sim.inv">Investissement AEGIS</span><b id="roiInv" class="or">38 000 €</b></div>
+            <div><span data-i18n="d.sim.acc">Un accident grave évité</span><b id="roiAcc">200 000 €</b></div>
+            <div><span data-i18n="d.sim.net">Économie nette estimée</span><b id="roiNet" class="g">162 000 €</b></div>
+            <div><span data-i18n="d.sim.pay">Amortissement</span><b><span id="roiPay">2,3</span> <span data-i18n="d.sim.mo">mois</span></b></div>
+          </div>
+        </div>
+        <div class="bar-row"><div class="bar-l"><span data-i18n="d.r1">Coût de l'inaction · un accident grave</span><b>200 000 €</b></div><div class="bar"><i class="b1" style="--w:100%"></i></div></div>
+        <div class="bar-row"><div class="bar-l"><span data-i18n="d.r2">Investissement AEGIS</span><b class="or" id="roiInv2">38 000 €</b></div><div class="bar"><i class="b2" id="roiBar" style="--w:19%"></i></div></div>
+        <p class="note" data-i18n="d.rn">Hypothèse de l'équipe AEGIS : un seul accident grave évité par an, à 200 000 €. Estimation indicative.</p>
       </div>
       <div class="bc b-eth rv">
         <h3 data-i18n="d.eth">Éthique</h3>
         <p class="bc-big" data-i18n="d.eth1">100 % conforme RGPD</p>
+        <div class="flow" aria-label="Flux de données">
+          <div class="fn"><b data-i18n="d.p1">Caméra IP</b></div>
+          <div class="fl"><i></i></div>
+          <div class="fn core"><b data-i18n="d.p2">Boîtier local · Floutage 0 ms</b><em data-i18n="d.p4">✕ Cloud bloqué</em></div>
+          <div class="fl"><i></i></div>
+          <div class="fn"><b data-i18n="d.p3">Signal anonyme</b></div>
+        </div>
         <ul><li data-i18n="p1.t">Aucun stockage d'images</li><li data-i18n="p2.t">Aucune reconnaissance faciale</li><li data-i18n="p3.t">Outil statistique, pas disciplinaire</li></ul>
       </div>
       <div class="bc b-use rv">
@@ -170,18 +195,21 @@
         <h3 data-i18n="d.team">Équipe · F.P.Ms UMONS</h3>
         <p class="bc-big" data-i18n="team.h">Neuf étudiants ingénieurs, une obsession : zéro accident.</p>
         <div class="roster">
-      <h3 data-i18n="team.p1">Pôle business &amp; stratégie</h3>
-      <ul>
-        <li><b>Ugo Deproote</b><a class="mono" href="mailto:ugo.deproote@student.umons.ac.be" data-cursor="Écrire">ugo.deproote@student.umons.ac.be</a></li>
-        <li><b>Léa Stevenart</b><a class="mono" href="mailto:lea.stevenart@student.umons.ac.be" data-cursor="Écrire">lea.stevenart@student.umons.ac.be</a></li>
-        <li><b>Liam Bernier</b><a class="mono" href="mailto:liam.bernier@student.umons.ac.be" data-cursor="Écrire">liam.bernier@student.umons.ac.be</a></li>
-      </ul>
-      <h3 data-i18n="team.p2">Pôle R&amp;D &amp; ingénierie</h3>
-      <ul>
-        <li><b>Yanis Dewolf</b></li><li><b>Pierre Cawet</b></li><li><b>Mathys Ficarotta</b></li><li><b>Hugo Godfroid</b></li><li><b>Luna Renard</b></li><li><b>Romain Bequet</b></li>
-      </ul>
-    </div>
-
+          <div class="pole">
+            <span class="badge" data-i18n="team.p1">Business &amp; stratégie</span>
+            <ul>
+              <li><b>Ugo Deproote</b><a class="mono" href="mailto:ugo.deproote@student.umons.ac.be" data-cursor="Écrire">ugo.deproote@student.umons.ac.be</a></li>
+              <li><b>Léa Stevenart</b><a class="mono" href="mailto:lea.stevenart@student.umons.ac.be" data-cursor="Écrire">lea.stevenart@student.umons.ac.be</a></li>
+              <li><b>Liam Bernier</b><a class="mono" href="mailto:liam.bernier@student.umons.ac.be" data-cursor="Écrire">liam.bernier@student.umons.ac.be</a></li>
+            </ul>
+          </div>
+          <div class="pole">
+            <span class="badge" data-i18n="team.p2">R&amp;D &amp; ingénierie</span>
+            <ul>
+              <li><b>Yanis Dewolf</b></li><li><b>Pierre Cawet</b></li><li><b>Mathys Ficarotta</b></li><li><b>Hugo Godfroid</b></li><li><b>Luna Renard</b></li><li><b>Romain Bequet</b></li>
+            </ul>
+          </div>
+        </div>
       </div>
       <div class="bc b-faq rv">
         <h3 data-i18n="d.faq">Questions</h3>
@@ -219,6 +247,6 @@
 </footer>
 
 <script src="assets/vendor/lenis.min.js"></script>
-<script type="module" src="assets/js/main.js?v=26"></script>
+<script type="module" src="assets/js/main.js?v=27"></script>
 </body>
 </html>
