@@ -2,8 +2,9 @@ import * as THREE from 'three';
 import { GLTFLoader } from '../vendor/three/addons/loaders/GLTFLoader.js';
 import { toCreasedNormals } from '../vendor/three/addons/utils/BufferGeometryUtils.js';
 import { RoomEnvironment } from '../vendor/three/addons/environments/RoomEnvironment.js';
-import { initPPE } from './ppe3d.js?v=16';
-import { initI18n, getLang, hud as hudText, msg, onLang, fmtNum } from './i18n.js?v=16';
+import { initPPE } from './ppe3d.js?v=18';
+import { createWorld, poseAtStory, STORY } from './world.js?v=18';
+import { initI18n, getLang, hud as hudText, msg, onLang, fmtNum } from './i18n.js?v=18';
 
 /* ------------------------------------------------------------------ */
 const HIDE_PARTS = ['body69062', 'body935', 'body27961'];   // pièces du CAD masquées (splitter PoE hors position, optique, plaque)
@@ -16,10 +17,13 @@ const modelP = new Promise(r => { resolveModel = r; });   // modèle du boîtier
 
 const qs = new URLSearchParams(location.search);
 const SNAP = qs.has('snap');
+// debug caméra : ?l=x,y,z,tx,ty,tz,fov,coque,écran,u (repère boîtier) ou ?w=… (repère monde)
+const DBG = (() => { const l = qs.get('l'), w = qs.get('w'), v = l || w; return v ? { loc: !!l, a: v.split(',').map(Number) } : null; })();
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
 const isMobile = () => innerWidth < 900;
 
 initI18n();
@@ -65,7 +69,6 @@ function buildScene(gltf){
   model = gltf.scene;
   model.traverse(o => {
     if (!o.isMesh) return;
-    o.geometry = toCreasedNormals(o.geometry, .62);
     const def = MAT[o.name] || { color: 0x0f1115, roughness: .35, metalness: .6 };
     o.material = new THREE.MeshPhysicalMaterial({ envMapIntensity: 1.1, ...def });
     o.userData.ex = new THREE.Vector3(...(EX[o.name] || [0, -30, 0])).multiplyScalar(.001);
@@ -91,6 +94,7 @@ function initGL(){
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(32, 1, .1, 60);
   camera.position.set(0, 0, 6.5);
+  scene.fog = new THREE.Fog(0x0b0d10, 14, 34);   // le chantier se fond dans le fond de page
 
   scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), .04).texture;
   const key = new THREE.DirectionalLight(0xfff4ea, 2.6); key.position.set(-3, 4, 5); scene.add(key);
@@ -124,40 +128,64 @@ function resizeGL(){
   if (!renderer) return;
   renderer.setSize(innerWidth, innerHeight, false);
   camera.aspect = innerWidth / innerHeight;
-  camera.position.z = camera.aspect < 1 ? 7.4 : 6.5;
+  camera.userData.vo = -1;   // force le recalcul du cadrage dans applyCamera()
   camera.updateProjectionMatrix();
 }
 
 /* ============================ KEYFRAMES (scroll → 3D) ============================ */
 const S0 = 11;
-const BASE = { px: 1.4, py: -.05, pz: 0, rx: .55, ry: 3.7, rz: 0, s: .8, ex: 0, al: 0, sc: 0, v: 1, m: 1, mv: 1 };
+// BASE : état du boîtier « hero » (rig) + caméra (cx…tz, fov, vo = décalage horizontal de l'image) + monde (wa = chantier visible,
+// rg = boîtier hero visible, sh = opacité de la coque PLA, hd = écran interne, tr = flux de métadonnées)
+const BASE = { px: 1.4, py: -.05, pz: 0, rx: .55, ry: 3.7, rz: 0, s: .8, ex: 0, al: 0, sc: 0, v: 1, m: 1, mv: 1,
+  cx: 0, cy: 0, cz: 6.5, tx: 0, ty: 0, tz: 0, fov: 32, vo: 0, wa: 0, rg: 1, sh: 1, hd: 0, tr: 0 };
 const K = (sec, f, o = {}, pin = false) => ({ sec, f, pin, ...BASE, ...o });
+// KW : clé de caméra dans le monde (interpolation linéaire = travelling continu) ; KL : mêmes valeurs mais caméra/cible en repère boîtier
+const KW = (f, c, o = {}) => ({ ...K('#solution', f, { wa: 1, rg: 0, vo: 1, cx: c[0], cy: c[1], cz: c[2], tx: c[3], ty: c[4], tz: c[5], fov: c[6], ...o }, true), lin: true });
+const KL = (f, c, o = {}) => ({ ...KW(f, c, { vo: .6, ...o }), loc: true });
 const KEYS = [
   K('#hero', .5, {}),
   K('#manifeste', .25, { px: 1.0, ry: 2.8, rx: .3, s: .6, v: 0 }),
   K('#terrain', .9, { v: 0 }),
-  K('#solution', 0, { px: 1.45, s: .8, ry: 3.5 }, true),
-  K('#solution', .17, { px: 1.45, s: .8, ry: 3.3 }, true),
-  K('#solution', .31, { px: 1.0, s: .74, ex: 1, sc: 1, rx: .62, ry: 3.6 }, true),
-  K('#solution', .46, { px: 1.0, s: .74, ex: 1, sc: 1, rx: .62, ry: 4.2 }, true),
-  K('#solution', .59, { px: 1.45, s: .8, ex: 0, al: 1, rx: .5, ry: 3.7 }, true),
-  K('#solution', .74, { px: 1.45, s: .8, ex: 0, al: 1, rx: .45, ry: 3.25 }, true),
-  K('#solution', .9, { px: 2.6, py: 1.3, pz: -1.8, s: .5, al: 0, ry: 3.2, v: .9 }, true),
-  K('#solution', 1, { px: 2.6, py: 1.3, pz: -1.8, s: .5, al: 0, ry: 3.5, v: .9 }, true),
-  K('#solution', 1.04, { px: 2.6, py: 1.3, pz: -1.8, s: .5, ry: 3.5, v: 0 }, true),
+  // ---- #solution : séquence immersive en 3 actes (progression u = f) ----
+  // ACTE 1 (0 → .35)  le terrain : l'ouvrier retire son casque près d'une machine ; la caméra monte vers le boîtier
+  KW(-.02, [3.8, 2.9, 9.8, -.6, 1.4, -.4, 42], { v: 0 }),
+  KW(.03, [3.8, 2.9, 9.8, -.6, 1.4, -.4, 42]),
+  KW(.12, [1.6, 2.0, 5.8, -.5, 1.35, .2, 38]),
+  KW(.26, [.6, 1.75, 4.4, -.3, 1.45, .3, 34]),
+  KW(.35, [-1.9, 3.2, 1.6, -2.6, 2.75, -2.7, 38]),
+  // ACTE 2 (.35 → .70)  traversée de la coque : coordonnées dans le repère du GLB (mètres) ; panneau interne en x .05, y -.003, z -.04
+  KL(.42, [0, .1, .3, 0, 0, -.04, 38]),
+  KL(.50, [.03, .07, 0, .04, -.005, -.04, 45], { sh: .08 }),
+  KL(.56, [.012, .05, .03, .045, -.004, -.04, 50], { sh: .08, hd: 1 }),
+  KL(.60, [.012, .05, .03, .045, -.004, -.04, 50], { sh: .08, hd: 1 }),
+  KL(.66, [-.03, .06, .05, -.065, -.01, -.038, 55], { sh: .08, hd: 1 }),
+  KL(.70, [.05, .12, .12, .02, 0, -.04, 45], { sh: 1, hd: 0 }),
+  // ACTE 3 (.70 → 1)  le bureau du conseiller QSE : le flux ne transporte que des métadonnées
+  KW(.76, [-1.6, 3.7, 3.0, 2.5, 3.6, -1.5, 40], { tr: 1 }),
+  KW(.86, [5.0, 3.7, 1.7, 6.6, 3.6, -2.6, 34], { tr: 1 }),
+  KW(.95, [6.6, 3.62, -.7, 6.6, 3.6, -2.88, 36], { tr: .3 }),
+  KW(1, [6.6, 3.62, -.7, 6.6, 3.6, -2.88, 36], { tr: 0 }),
+  KW(1.04, [6.6, 3.62, -.7, 6.6, 3.6, -2.88, 36], { v: 0 }),
   K('#stage', -.1, { px: 0, py: 0, rx: .6, ry: 3.3, s: .95, m: 0, v: 0 }),
   K('#stage', .2, { px: 0, py: 0, rx: .6, ry: 3.3, s: .95, m: 0, v: 1 }),
   K('#stage', .85, { px: 0, py: 0, rx: .6, ry: 3.3, s: .95, m: 0, v: 1 }),
   K('#stage', 1.15, { px: 0, py: 0, rx: .6, ry: 3.3, s: .95, m: 0, v: 0 }),
   K('#preuve', .3, { v: 0 }),
 ];
-const PROPS = ['px', 'py', 'pz', 'rx', 'ry', 'rz', 's', 'ex', 'al', 'sc', 'v', 'm', 'mv'];
+const PROPS = ['px', 'py', 'pz', 'rx', 'ry', 'rz', 's', 'ex', 'al', 'sc', 'v', 'm', 'mv', 'cx', 'cy', 'cz', 'tx', 'ty', 'tz', 'fov', 'vo', 'wa', 'rg', 'sh', 'hd', 'tr'];
 let anchors = [];
+const _lv = new THREE.Vector3();
+let world = null;
 function computeAnchors(){
   const vh = innerHeight, sy = window.scrollY;
   anchors = KEYS.map(k => {
     const el = $(k.sec); if (!el) return null;
     const top = el.getBoundingClientRect().top + sy, h = el.offsetHeight;
+    if (k.loc){
+      if (!world) return null;
+      const c = world.boxToWorld(k.cx, k.cy, k.cz, _lv).toArray(), t = world.boxToWorld(k.tx, k.ty, k.tz, _lv).toArray();
+      k = { ...k, cx: c[0], cy: c[1], cz: c[2], tx: t[0], ty: t[1], tz: t[2] };
+    }
     return { ...k, y: k.pin ? top + k.f * (h - vh) : top + k.f * h - vh * .5 };
   }).filter(Boolean).sort((a, b) => a.y - b.y);
 }
@@ -168,7 +196,7 @@ function targetAt(y, out){
   if (y >= A[n - 1].y) { PROPS.forEach(p => out[p] = A[n - 1][p]); return; }
   let i = 0; while (i < n - 2 && y > A[i + 1].y) i++;
   const a = A[i], b = A[i + 1];
-  let t = clamp((y - a.y) / (b.y - a.y || 1), 0, 1); t = t * t * (3 - 2 * t);
+  let t = clamp((y - a.y) / (b.y - a.y || 1), 0, 1); if (!(a.lin && b.lin)) t = t * t * (3 - 2 * t);
   PROPS.forEach(p => out[p] = a[p] + (b[p] - a[p]) * t);
 }
 
@@ -214,12 +242,50 @@ function stepAnims(dt){
   }
 }
 
+// ---- récit 3D de #solution : le chantier partagé (world.js), piloté par la progression du scroll (su = 0..1) ----
+let su = 0, suT = 0, alertK = 0, beaconK = 0, edgeAcc = 0, qseAcc = 0;
+function updateWorld(dt){
+  su += (suT - su) * (SNAP || DBG ? 1 : 1 - Math.exp(-dt * 6.5));
+  const pose = poseAtStory(su), kk = 1 - Math.exp(-dt * 7);
+  world.applyHero(pose, dt);
+  world.update(dt, time, camera);
+  alertK += ((su >= STORY.alertOn && su < STORY.alertOff ? 1 : 0) - alertK) * kk;
+  beaconK += ((su >= STORY.beacon[0] && su < STORY.beacon[1] ? 1 : 0) - beaconK) * kk;
+  world.applyAlert(alertK > .05, time, alertK > .05 ? alertK : 1, camera);
+  world.setBeacon(beaconK, time);
+  world.setShell(st.sh); world.setEdgeAlpha(st.hd); world.setTrail(st.tr, time);
+  const lang = getLang();   // les libellés des écrans 2D suivent le toggle FR/EN à la frame suivante
+  edgeAcc += dt; if (st.hd > .01 && edgeAcc > 1 / 30){ edgeAcc = 0; world.drawEdge({ u: su, T: time, lang, helmet: pose.h, missing: pose.status === 'missing', alert: alertK }); }
+  qseAcc += dt; if (su > .6 && qseAcc > 1 / 24){ qseAcc = 0; world.drawQSE({ u: su, T: time, lang }); }
+}
+// caméra pilotée par les keyframes ; en portrait le fov s'élargit pour que le boîtier / l'écran QSE ne soient pas coupés
+function applyCamera(){
+  const wa = clamp(st.wa, 0, 1), port = camera.aspect < 1;
+  camera.position.set(st.cx, st.cy, st.cz * (1 + (port ? .138 : 0) * (1 - wa)));
+  let fov = st.fov;
+  if (port && wa > 0) fov = lerp(fov, 2 * Math.atan(Math.tan(fov * Math.PI / 360) / camera.aspect) * 180 / Math.PI, wa);
+  // desktop : l'image est décalée vers la droite (le texte occupe la gauche) ; portrait : vers le haut (le texte occupe le bas)
+  const near = wa > .5 ? .01 : .1, vo = port ? 0 : st.vo * wa, vy = port ? innerHeight * .2 * wa : 0, key = vo * 1000 + vy;
+  if (Math.abs(camera.fov - fov) > .01 || camera.near !== near || camera.userData.vo !== key){
+    camera.fov = fov; camera.near = near; camera.userData.vo = key;
+    if (key > .001) camera.setViewOffset(innerWidth, innerHeight, -innerWidth * .16 * vo, vy, innerWidth, innerHeight); else camera.clearViewOffset();
+    camera.updateProjectionMatrix();
+  }
+  camera.lookAt(st.tx, st.ty, st.tz);
+}
+
 function renderGL(dt, y){
   stepAnims(dt);
   targetAt(y, tg);
   tg.ex = Math.max(tg.ex, userEx * stageW); tg.sc = Math.max(tg.sc, userEx * stageW * .7);
   const k = SNAP ? 1 : 1 - Math.exp(-dt * (ready ? 6.5 : 2.4));
   PROPS.forEach(p => st[p] += (tg[p] - st[p]) * k);
+  suT = clamp((y - M.solTop) / (M.solH || 1), 0, 1);
+  if (DBG && world){
+    const [a0, a1, a2, b0, b1, b2, fv = 40, sh = 1, hd = 0, u = .5] = DBG.a;
+    const c = DBG.loc ? world.boxToWorld(a0, a1, a2, _lv).toArray() : [a0, a1, a2], t = DBG.loc ? world.boxToWorld(b0, b1, b2, _lv).toArray() : [b0, b1, b2];
+    Object.assign(st, { cx: c[0], cy: c[1], cz: c[2], tx: t[0], ty: t[1], tz: t[2], fov: fv, sh, hd, v: 1, wa: 1, rg: 0, vo: 0, tr: 0 }); suT = u;
+  }
 
   const mob = isMobile();
   smx += (mx - smx) * (1 - Math.exp(-dt * 4)); smy += (my - smy) * (1 - Math.exp(-dt * 4));
@@ -250,7 +316,11 @@ function renderGL(dt, y){
     r.material.opacity = st.al * Math.pow(1 - ph, 1.6) * .8;
     r.visible = st.al > .01;
   });
-  camera.lookAt(0, 0, 0);
+  rig.visible = st.rg > .5;
+  const wOn = !!world && st.wa > .5;
+  if (world) world.group.visible = wOn;   // le chantier n'est rendu que pendant #solution
+  if (wOn) updateWorld(dt);
+  applyCamera();
   scene.updateMatrixWorld(true);
   renderer.render(scene, camera);
   updateTags(vis);
@@ -267,6 +337,7 @@ let activeSec = -1;
 const stepEls = $$('.step'), hudEl = $('#hud'), hudN = $('#hudN'), hudT = $('#hudT'), report = $('#report');
 let curStep = -1;
 const solution = $('#solution');
+const STEP_AT = [0, .17, .35, .70, 1];   // étapes 01/02 = acte 1, 03 = acte 2 (boîtier), 04 = acte 3 (bureau QSE)
 const stageEl = $('#stage'), exBtn = $('#exBtn');
 const scrubs = [];
 let ppe = null, cursorTick = null;   // pilotés par la boucle rAF unique (voir loop())
@@ -301,16 +372,14 @@ function updateUI(y){
   });
   const top = M.solTop, H = M.solH;
   const p = clamp((y - top) / H, 0, 1);
-  const si = Math.min(3, Math.floor(p * 4 + .0001));
+  let si = 0; while (si < 3 && p >= STEP_AT[si + 1] - .0001) si++;
   stepEls.forEach((el, i) => {
-    el.style.setProperty('--p', clamp(p * 4 - i, 0, 1).toFixed(3));
+    el.style.setProperty('--p', clamp((p - STEP_AT[i]) / (STEP_AT[i + 1] - STEP_AT[i]), 0, 1).toFixed(3));
     el.classList.toggle('on', i === si);
   });
   if (si !== curStep){
     curStep = si;
     hudN.textContent = '0' + (si + 1); hudT.textContent = hudText(si);
-    hudEl.classList.toggle('off', si === 3);
-    report.classList.toggle('on', si === 3);
   }
 }
 onLang(() => { if (curStep >= 0) hudT.textContent = hudText(curStep); });
@@ -340,7 +409,13 @@ $$('.rv').forEach(el => {
   el.style.setProperty('--d', (Math.min(sibs.indexOf(el), 4) * .07).toFixed(2) + 's');
   io.observe(el);
 });
-$$('.rvt').forEach(el => io.observe(el));   // titres : révélation par masque vertical
+// titres : révélation par masque vertical. On observe le PARENT (un élément masqué par son propre
+// clip-path n'est jamais considéré comme intersectant par l'IntersectionObserver).
+const ioT = new IntersectionObserver(es => es.forEach(e => {
+  if (!e.isIntersecting) return;
+  $$('.rvt', e.target).forEach(h => h.classList.add('in')); ioT.unobserve(e.target);
+}), { threshold: .12, rootMargin: '0px 0px -6% 0px' });
+new Set($$('.rvt').map(h => h.parentElement)).forEach(p => ioT.observe(p));
 
 // spotlight + bordure lumineuse : variables CSS mises à jour uniquement pendant le survol
 if (matchMedia('(hover:hover) and (pointer:fine)').matches && !reduced){
@@ -495,10 +570,19 @@ function loop(now){
 requestAnimationFrame(loop);
 
 // Le GLB n'est téléchargé qu'une seule fois : la scène principale utilise l'original, la scène « preuve » un clone.
+function buildWorld(tpl){
+  world = createWorld(THREE, { model: tpl.clone(true), getLang });
+  world.group.visible = false; scene.add(world.group);
+  // précompilation des shaders pendant l'écran de chargement (évite un à-coup à l'entrée dans #solution)
+  world.group.visible = true; try { renderer.compile(scene, camera); } catch (e) {} world.group.visible = false;
+  remeasure();   // résout les keyframes exprimées dans le repère du boîtier
+}
 new GLTFLoader().loadAsync(GLB_URL, e => { if (e.lengthComputable) setPct(e.loaded / e.total * 90); })
   .then(g => {
-    resolveModel(g.scene.clone(true));
-    if (glOK) buildScene(g);
+    g.scene.traverse(o => { if (o.isMesh) o.geometry = toCreasedNormals(o.geometry, .62); });   // une seule fois : géométrie partagée par toutes les instances
+    const tpl = g.scene.clone(true);
+    resolveModel(tpl);
+    if (glOK){ buildScene(g); buildWorld(tpl); }
     setPct(100);
     Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 2500))]).then(() => setTimeout(start, 300));
   })
