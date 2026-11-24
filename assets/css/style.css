@@ -111,7 +111,6 @@ body.menu .burger i:nth-child(1){top:17px;transform:rotate(45deg)}body.menu .bur
 .cam3d{position:relative;aspect-ratio:940/677;background:#050506;overflow:hidden;border-radius:14px}
 .cam3d canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .cmp-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;transition:filter .5s var(--ease)}
-.cam3d.off .cmp-img{filter:grayscale(1) brightness(.68) contrast(1.05) blur(7px)}
 #cmpOv{pointer-events:none}
 .cam-hud{position:absolute;inset:0;pointer-events:none;font-size:clamp(9px,1vw,11px);color:rgba(255,255,255,.85);z-index:4}
 .cam-hud>div{position:absolute;padding:clamp(8px,1.2vw,14px)}
@@ -361,3 +360,10 @@ body.ready .act.on .hero-c .act-h .w>span{transform:none}
 .b-eth .flow{margin-bottom:12px}
 .b-use li{padding:12px 0}
 @media (max-width:900px){.a2 .act-t{max-width:88vw}}
+
+/* mode « Sans Aegis » : image claire et naturelle, badge neutre, bandeau « aucune alerte » */
+.cam3d .b-off,.cam3d .cam-note{display:none}
+.cam3d.off .b-on{display:none}
+.cam3d.off .b-off{display:inline-block;background:rgba(10,10,12,.78);color:rgba(245,245,247,.85);border:1px solid rgba(255,255,255,.16);font-weight:500}
+.cam-note{position:absolute;left:12px;right:12px;bottom:12px;z-index:5;padding:8px 14px;border-radius:12px;background:rgba(10,10,12,.78);border:1px solid rgba(255,255,255,.12);color:rgba(245,245,247,.85);font-size:12px;text-align:center;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.cam3d.off .cam-note{display:block}

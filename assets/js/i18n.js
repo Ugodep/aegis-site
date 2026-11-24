@@ -1,5 +1,6 @@
 // FR (défaut, lu depuis le HTML) / EN
 const EN = {
+  'g.off':'Standard camera · No detection','cmp.note':'No local alert triggered: a missing PPE goes unnoticed.',
   'pin.shell':'High-density polymer shell','pin.sink':'CNC aluminium heatsink','pin.pi':'Raspberry Pi 5 · Edge AI',
   'd.sim.cams':'Number of cameras equipped','d.sim.unit':'€3,800 per device','d.sim.inv':'AEGIS investment','d.sim.acc':'One serious accident avoided','d.sim.net':'Estimated net savings','d.sim.pay':'Payback','d.sim.mo':'months',
   'd.p1':'IP camera','d.p2':'Local box · 0 ms blurring','d.p3':'Anonymous signal','d.p4':'✕ Cloud blocked',
