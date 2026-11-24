@@ -2,13 +2,17 @@ import * as THREE from 'three';
 import { GLTFLoader } from '../vendor/three/addons/loaders/GLTFLoader.js';
 import { toCreasedNormals } from '../vendor/three/addons/utils/BufferGeometryUtils.js';
 import { RoomEnvironment } from '../vendor/three/addons/environments/RoomEnvironment.js';
-import { initPPE } from './ppe3d.js?v=13';
+import { initPPE } from './ppe3d.js?v=15';
 import { initI18n, getLang, hud as hudText, msg, onLang } from './i18n.js?v=13';
 
 /* ------------------------------------------------------------------ */
 const HIDE_PARTS = ['body69062', 'body935', 'body27961'];   // pièces du CAD masquées (splitter PoE hors position, optique, plaque)
 const TEAM_EMAIL = 'ugo.deproote@student.umons.ac.be';      // ← destinataire du formulaire de contact
 /* ------------------------------------------------------------------ */
+
+const GLB_URL = 'assets/boitier.glb?v=14';
+let resolveModel;
+const modelP = new Promise(r => { resolveModel = r; });   // modèle du boîtier partagé avec ppe3d.js
 
 const qs = new URLSearchParams(location.search);
 const SNAP = qs.has('snap');
@@ -243,24 +247,37 @@ let curStep = -1;
 const solution = $('#solution');
 const stageEl = $('#stage'), exBtn = $('#exBtn');
 const scrubs = [];
+let ppe = null, cursorTick = null;   // pilotés par la boucle rAF unique (voir loop())
+
+// Mesures de layout mises en cache : recalculées au resize / changement de langue, jamais par frame.
+const M = { secTops: [], stageC: 0, scrubs: [], solTop: 0, solH: 1, doc: 1 };
+function measure(){
+  const sy = window.scrollY, abs = el => el.getBoundingClientRect().top + sy;
+  M.secTops = sections.map(s => s ? abs(s) : Infinity);
+  const sr = stageEl.getBoundingClientRect(); M.stageC = sr.top + sy + sr.height / 2;
+  M.scrubs = scrubs.map(sc => { const r = sc.el.getBoundingClientRect(); return { top: r.top + sy, h: r.height }; });
+  M.solTop = abs(solution); M.solH = solution.offsetHeight - innerHeight;
+  M.doc = document.documentElement.scrollHeight - innerHeight;
+}
 
 function updateUI(y){
-  const vh = innerHeight, doc = document.documentElement.scrollHeight - vh;
+  const vh = innerHeight, doc = M.doc;
   nav.classList.toggle('sc', y > 30);
   prog.style.transform = `scaleX(${doc > 0 ? clamp(y / doc, 0, 1) : 0})`;
-  let a = 0; sections.forEach((s, i) => { if (s && s.getBoundingClientRect().top <= vh * .45) a = i; });
+  let a = 0; M.secTops.forEach((t, i) => { if (t - y <= vh * .45) a = i; });
   if (a !== activeSec){
     activeSec = a;
     const late = SEC_IDS[a] === 'faq' || SEC_IDS[a] === 'contact';
     const nid = late ? null : '#' + owner(a, NAV_IDS);
     navLinks.forEach(l => l.classList.toggle('on', l.getAttribute('href') === nid));
   }
-  { const r = stageEl.getBoundingClientRect(); stageW = clamp(1 - Math.abs((r.top + r.height / 2) - vh / 2) / (vh * .55), 0, 1); }
-  scrubs.forEach(sc => {
-    const r = sc.el.getBoundingClientRect(), p = clamp((vh * .82 - r.top) / (r.height + vh * .42), 0, 1), n = sc.w.length;
+  stageW = clamp(1 - Math.abs((M.stageC - y) - vh / 2) / (vh * .55), 0, 1);
+  scrubs.forEach((sc, k) => {
+    const m = M.scrubs[k]; if (!m) return;
+    const p = clamp((vh * .82 - (m.top - y)) / (m.h + vh * .42), 0, 1), n = sc.w.length;
     sc.w.forEach((w, i) => { w.style.opacity = (.16 + .84 * clamp(p * (n + 3) - i, 0, 1)).toFixed(2); });
   });
-  const top = solution.getBoundingClientRect().top + window.scrollY, H = solution.offsetHeight - vh;
+  const top = M.solTop, H = M.solH;
   const p = clamp((y - top) / H, 0, 1);
   const si = Math.min(3, Math.floor(p * 4 + .0001));
   stepEls.forEach((el, i) => {
@@ -348,6 +365,7 @@ function splitScrub(){
     el.innerHTML = words.map(w => `<span class="w${/^(déjà|already|l.IA|the AI)/i.test(w) || /^(IA|AI)[.!]?$/.test(w) ? ' hl' : ''}">${w}</span>`).join(' ');
     scrubs.push({ el, w: [...el.children] });
   });
+  measure();
 }
 splitScrub();
 onLang(splitScrub);
@@ -355,10 +373,13 @@ onLang(splitScrub);
 /* ============================ scène 3D « ce que voit le boîtier » ============================ */
 {
   const wrap = $('#cam3d'), stP = $('#stP'), stOk = $('#stOk'), stAl = $('#stAl'), camAlert = $('#camAlert'), camTime = $('#camTime'), camFps = $('#camFps');
-  const ppe = initPPE({ wrap, gl: $('#ppeGl'), ov: $('#ppeOv'), glb: 'assets/boitier.glb?v=13', ui: d => {
-    stP.textContent = d.people; stOk.textContent = d.ok; stAl.textContent = d.alerts;
-    camAlert.classList.toggle('on', d.alertOn); camFps.textContent = d.fps;
-    camTime.textContent = new Date().toTimeString().slice(0, 8);
+  // n'écrit dans le DOM que si la valeur a changé (évite des dizaines de réécritures par seconde)
+  const put = (el, v) => { if (el._v !== v){ el._v = v; el.textContent = v; } };
+  let alertPrev = false;
+  ppe = initPPE({ wrap, gl: $('#ppeGl'), ov: $('#ppeOv'), model: modelP, ui: d => {
+    put(stP, d.people); put(stOk, d.ok); put(stAl, d.alerts); put(camFps, d.fps);
+    if (d.alertOn !== alertPrev){ alertPrev = d.alertOn; camAlert.classList.toggle('on', d.alertOn); }
+    put(camTime, new Date().toTimeString().slice(0, 8));
   } });
   new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? ppe.start() : ppe.stop()), { threshold: .08 }).observe(wrap);
   $$('#seg button').forEach(b => b.addEventListener('click', () => {
@@ -388,14 +409,15 @@ if (matchMedia('(hover:hover) and (pointer:fine)').matches && !reduced){
   addEventListener('pointerup', () => cur.classList.remove('press'));
   document.documentElement.addEventListener('mouseleave', () => document.body.classList.remove('has-cur'));
   document.documentElement.addEventListener('mouseenter', () => { if (!first) document.body.classList.add('has-cur'); });
-  (function f(){ cx += (tx - cx) * .32; cy += (ty - cy) * .32; cur.style.transform = `translate3d(${cx.toFixed(1)}px,${cy.toFixed(1)}px,0)`; requestAnimationFrame(f); })();
+  cursorTick = () => { cx += (tx - cx) * .32; cy += (ty - cy) * .32; cur.style.transform = `translate3d(${cx.toFixed(1)}px,${cy.toFixed(1)}px,0)`; };
 }
 
 /* ============================ démarrage ============================ */
 glOK = initGL();
 computeAnchors();
-addEventListener('resize', () => { resizeGL(); computeAnchors(); });
-new ResizeObserver(() => computeAnchors()).observe(document.body);
+const remeasure = () => { computeAnchors(); measure(); };
+addEventListener('resize', () => { resizeGL(); remeasure(); });
+new ResizeObserver(remeasure).observe(document.body);
 
 const ldBar = $('#ldBar'), ldPct = $('#ldPct');
 function setPct(p){ ldBar.style.width = p + '%'; ldPct.textContent = Math.round(p); }
@@ -403,6 +425,7 @@ function setPct(p){ ldBar.style.width = p + '%'; ldPct.textContent = Math.round(
 function start(){
   document.body.classList.add('ready');
   $('#loader').classList.add('done');
+  remeasure();
   ready = true;
   let y = qs.get('y');
   const at = qs.get('at'); // debug : ?at=solution:.38
@@ -415,19 +438,21 @@ function loop(now){
   lenis && lenis.raf(now);
   const y = scrollY_();
   updateUI(y);
-  if (document.hidden === false) renderGL(dt, y);
+  if (document.hidden === false){
+    renderGL(dt, y);
+    if (ppe && ppe.running) ppe.frame(now);   // scène « preuve » : rendue dans la même boucle, seulement si visible
+  }
+  cursorTick && cursorTick();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 
-if (glOK){
-  new GLTFLoader().loadAsync('assets/boitier.glb?v=9', e => { if (e.lengthComputable) setPct(e.loaded / e.total * 90); })
-    .then(g => {
-      buildScene(g);
-      setPct(100);
-      Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 2500))]).then(() => setTimeout(start, 300));
-    })
-    .catch(err => { console.error(err); glOK = false; start(); });
-} else {
-  setPct(100); setTimeout(start, 300);
-}
+// Le GLB n'est téléchargé qu'une seule fois : la scène principale utilise l'original, la scène « preuve » un clone.
+new GLTFLoader().loadAsync(GLB_URL, e => { if (e.lengthComputable) setPct(e.loaded / e.total * 90); })
+  .then(g => {
+    resolveModel(g.scene.clone(true));
+    if (glOK) buildScene(g);
+    setPct(100);
+    Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 2500))]).then(() => setTimeout(start, 300));
+  })
+  .catch(err => { console.error(err); resolveModel(null); glOK = false; start(); });

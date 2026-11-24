@@ -1,7 +1,6 @@
 // Scène 3D « ce que voit le boîtier » : un chantier, des ouvriers mannequins (sans visage),
 // le vrai boîtier AEGIS fixé au mur, son cône de vision, et des détections d'EPI en temps réel.
 import * as THREE from 'three';
-import { GLTFLoader } from '../vendor/three/addons/loaders/GLTFLoader.js';
 import { toCreasedNormals } from '../vendor/three/addons/utils/BufferGeometryUtils.js';
 import { RoomEnvironment } from '../vendor/three/addons/environments/RoomEnvironment.js';
 
@@ -10,7 +9,9 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const ease = t => t * t * (3 - 2 * t);
 const HIDE = ['body69062', 'body935', 'body27961'];
 
-export function initPPE({ wrap, gl, ov, ui, glb }){
+// `model` : promesse du modèle du boîtier (déjà chargé par main.js, pas de second téléchargement).
+// La boucle de rendu est pilotée par main.js : il appelle frame(now) tant que `running` est vrai.
+export function initPPE({ wrap, gl, ov, ui, model }){
   const octx = ov.getContext('2d');
   let renderer, scene, camera, running = false, built = false, failed = false;
   let W = 960, H = 540, dpr = 1, T = 0, last = 0, on = true;
@@ -90,7 +91,7 @@ export function initPPE({ wrap, gl, ov, ui, glb }){
 
     scene.add(new THREE.HemisphereLight(0x8fa2bd, 0x15161a, .75));
     const key = new THREE.DirectionalLight(0xfff1e0, 2.3); key.position.set(4, 7.5, 6.5); key.castShadow = true;
-    key.shadow.mapSize.set(2048, 2048); Object.assign(key.shadow.camera, { left: -9, right: 9, top: 7, bottom: -5, near: .5, far: 26 }); key.shadow.bias = -.0004;
+    key.shadow.mapSize.set(1024, 1024); Object.assign(key.shadow.camera, { left: -9, right: 9, top: 7, bottom: -5, near: .5, far: 26 }); key.shadow.bias = -.0004;
     scene.add(key);
     const rim = new THREE.PointLight(0xff7a30, 14, 16); rim.position.set(6, 2.6, -2); scene.add(rim);
     const fill = new THREE.PointLight(0x4fc3ff, 10, 16); fill.position.set(-6, 3, 3); scene.add(fill);
@@ -138,8 +139,9 @@ export function initPPE({ wrap, gl, ov, ui, glb }){
     }
 
     // le vrai boîtier AEGIS, fixé au mur
-    new GLTFLoader().loadAsync(glb).then(g => {
-      const m = g.scene; let led;
+    Promise.resolve(model).then(m => {
+      if (!m) return;
+      let led;
       m.traverse(o => {
         if (!o.isMesh) return;
         if (HIDE.includes(o.name)){ o.visible = false; return; }
@@ -196,7 +198,8 @@ export function initPPE({ wrap, gl, ov, ui, glb }){
   }
 
   /* ---------- animation ---------- */
-  const _b = new THREE.Box3(), _v = new THREE.Vector3();
+  const _b = new THREE.Box3(), _v = new THREE.Vector3(), _p = new THREE.Vector3(), _h = new THREE.Vector3();
+  const _o1 = new THREE.Vector3(-.17, .22, 0), _o2 = new THREE.Vector3(.17, -.17, 0);
   function animateWorker(w, dt){
     if (!w.isHero){
       w.x += w.dir * w.speed * dt; if (w.x > 8) w.x = -8; if (w.x < -8) w.x = 8;
@@ -218,7 +221,7 @@ export function initPPE({ wrap, gl, ov, ui, glb }){
   function project(vec){ _v.copy(vec).project(camera); return [(_v.x * .5 + .5) * W, (-_v.y * .5 + .5) * H]; }
   function bboxOf(obj){
     _b.setFromObject(obj); const mn = _b.min, mx = _b.max; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-    for (let i = 0; i < 8; i++){ const p = project(_v.set(i & 1 ? mx.x : mn.x, i & 2 ? mx.y : mn.y, i & 4 ? mx.z : mn.z).clone()); x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); }
+    for (let i = 0; i < 8; i++){ const p = project(_p.set(i & 1 ? mx.x : mn.x, i & 2 ? mx.y : mn.y, i & 4 ? mx.z : mn.z)); x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); }
     return [x0, y0, x1 - x0, y1 - y0];
   }
 
@@ -242,7 +245,7 @@ export function initPPE({ wrap, gl, ov, ui, glb }){
       bracket(b[0], b[1], b[2], b[3], col, Math.min(14, b[2] * .25));
       octx.font = `600 ${fs - 1}px "JetBrains Mono",monospace`; octx.fillStyle = bad ? '#ff4a3d' : 'rgba(41,182,246,.95)';
       octx.fillText('PERSON ' + conf(w.id, 0), b[0], b[1] + b[3] + fs + 3);
-      w.head.getWorldPosition(_v); const hc = _v.clone(), hs = [project(hc.clone().add(new THREE.Vector3(-.17, .22, 0))), project(hc.clone().add(new THREE.Vector3(.17, -.17, 0)))];
+      w.head.getWorldPosition(_h); const hs = [project(_p.copy(_h).add(_o1)), project(_p.copy(_h).add(_o2))];
       const hx = Math.min(hs[0][0], hs[1][0]), hy = Math.min(hs[0][1], hs[1][1]), hw = Math.abs(hs[1][0] - hs[0][0]), hh = Math.abs(hs[1][1] - hs[0][1]);
       const hcol = bad ? '#ff4a3d' : '#43c37a';
       bracket(hx, hy, hw, hh, hcol, Math.min(8, hw * .3));
@@ -271,15 +274,16 @@ export function initPPE({ wrap, gl, ov, ui, glb }){
     renderer.render(scene, camera);
     drawOverlay();
     ui && ui({ people: Math.floor(stats.people), ok: Math.floor(stats.ok), alerts: stats.alerts, alertOn: alerting, fps });
-    requestAnimationFrame(frame);
   }
 
   return {
+    frame,
+    get running(){ return running; },
     start(){
       if (failed || running) return;
       if (!built) build();
       if (failed) return;
-      running = true; last = performance.now(); requestAnimationFrame(frame);
+      running = true; last = performance.now();
     },
     stop(){ running = false; },
     setOn(v){ on = v; if (!v) alertUntil = 0; }
