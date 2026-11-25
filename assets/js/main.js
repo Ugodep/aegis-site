@@ -7,8 +7,8 @@ import { RenderPass } from '../vendor/three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from '../vendor/three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from '../vendor/three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from '../vendor/three/addons/postprocessing/ShaderPass.js';
-import { initProof } from './proof.js?v=32';
-import { initI18n, getLang, msg, onLang, fmtNum } from './i18n.js?v=32';
+import { initProof } from './proof.js?v=33';
+import { initI18n, getLang, msg, onLang, fmtNum } from './i18n.js?v=33';
 
 /* ------------------------------------------------------------------ */
 const HIDE_PARTS = ['body69062', 'body935', 'body27961'];   // pièces du CAD masquées (splitter PoE hors position, optique, plaque)
@@ -318,31 +318,56 @@ $$('.pill[data-part], .pin .pt').forEach(el => {
   ['pointerleave', 'blur'].forEach(ev => el.addEventListener(ev, () => setHL(null)));
 });
 
+// annotations de l'acte 2 : libellés en colonne à gauche du boîtier, ordre strict haut → bas, écart vertical garanti,
+// reliés à leur pièce par une ligne brisée de 1 px terminée par un point lumineux
+const MIN_GAP = 54;
+const pinSvg = $('#pinSvg'), SVGNS = 'http://www.w3.org/2000/svg';
 const pinEls = $$('.pin').map(el => {
   const pt = (el.dataset.pt || '').split(',').map(Number);
-  return { el, part: el.dataset.part, pt: pt.length === 3 ? new THREE.Vector3(...pt) : null, edge: el.dataset.edge === 'left', corners: null };
+  const g = document.createElementNS(SVGNS, 'g'), line = document.createElementNS(SVGNS, 'polyline'),
+    halo = document.createElementNS(SVGNS, 'circle'), dot = document.createElementNS(SVGNS, 'circle');
+  halo.setAttribute('r', '6'); halo.setAttribute('class', 'ph'); dot.setAttribute('r', '3'); dot.setAttribute('class', 'pd');
+  g.append(line, halo, dot); g.style.opacity = 0; pinSvg.appendChild(g);
+  return { el, g, line, halo, dot, part: el.dataset.part, pt: pt.length === 3 ? new THREE.Vector3(...pt) : null, edge: el.dataset.edge === 'left', samples: null, x: 0, y: 0 };
 });
+function project(v, m){
+  _v.copy(v); m.localToWorld(_v); _v.project(camera);
+  return [(_v.x * .5 + .5) * innerWidth, (-_v.y * .5 + .5) * innerHeight];
+}
+function hidePins(){
+  pinEls.forEach(p => { if (p.on){ p.el.style.opacity = 0; p.g.style.opacity = 0; p.el.classList.remove('live'); p.on = false; } });
+}
 function updatePins(vis){
   const show = !isMobile() && innerWidth >= 1100 && vis > .01;
   const k = show ? clamp((st.xv - .6) / .4, 0, 1) * vis : 0;
-  const leader = innerWidth * .56;
+  if (k < .01 || pinEls.some(p => !parts[p.part])){ hidePins(); return; }
   pinEls.forEach(p => {
     const m = parts[p.part];
-    if (!m || k < .01){ if (p.on){ p.el.style.opacity = 0; p.el.classList.remove('live'); p.on = false; } return; }
-    p.on = true;
-    let x, y;
     if (p.edge){
-      // ancre sur l'arête latérale extérieure : le coin de la boîte englobante le plus à gauche à l'écran (le libellé ne passe jamais derrière la coque)
-      if (!p.corners){ const b = m.geometry.boundingBox; p.corners = []; for (let i = 0; i < 8; i++) p.corners.push(new THREE.Vector3(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z)); }
+      // ancre sur la silhouette réelle : le sommet de la pièce le plus à gauche à l'écran (échantillon de ~300 sommets)
+      if (!p.samples){
+        const pos = m.geometry.attributes.position, step = Math.max(1, Math.floor(pos.count / 300));
+        p.samples = []; for (let i = 0; i < pos.count; i += step) p.samples.push(new THREE.Vector3().fromBufferAttribute(pos, i));
+      }
       let best = 1e9;
-      p.corners.forEach(c => { _v.copy(c); m.localToWorld(_v); _v.project(camera); const cx = (_v.x * .5 + .5) * innerWidth; if (cx < best){ best = cx; x = cx; y = (-_v.y * .5 + .5) * innerHeight; } });
-    } else {
-      _v.copy(p.pt || m.userData.c); m.localToWorld(_v); _v.project(camera);
-      x = (_v.x * .5 + .5) * innerWidth; y = (-_v.y * .5 + .5) * innerHeight;
-    }
-    p.el.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`;
-    p.el.style.setProperty('--w', Math.max(28, x - leader).toFixed(0) + 'px');
-    p.el.style.opacity = k.toFixed(2);
+      p.samples.forEach(v => { const [x, y] = project(v, m); if (x < best){ best = x; p.x = x; p.y = y; } });
+    } else [p.x, p.y] = project(p.pt || m.userData.c, m);
+  });
+  // colonne des libellés (bord droit), et positions verticales : ordre du HTML conservé, écart minimal garanti
+  const col = Math.max(innerWidth * .555, innerWidth * .38 + 240);
+  const ys = pinEls.map(p => p.y);
+  for (let i = 1; i < ys.length; i++) ys[i] = Math.max(ys[i], ys[i - 1] + MIN_GAP);
+  const overflow = ys[ys.length - 1] - (innerHeight - 48);
+  if (overflow > 0) for (let i = 0; i < ys.length; i++) ys[i] -= overflow;
+  ys[0] = Math.max(ys[0], 96);
+  for (let i = 1; i < ys.length; i++) ys[i] = Math.max(ys[i], ys[i - 1] + MIN_GAP);
+  pinEls.forEach((p, i) => {
+    p.on = true;
+    const ly = ys[i], elbow = Math.max(col + 10, Math.min(col + 28, p.x - 14));
+    p.el.style.transform = `translate3d(${col.toFixed(1)}px,${ly.toFixed(1)}px,0)`;
+    p.line.setAttribute('points', `${(col + 3).toFixed(1)},${ly.toFixed(1)} ${elbow.toFixed(1)},${ly.toFixed(1)} ${p.x.toFixed(1)},${p.y.toFixed(1)}`);
+    [p.dot, p.halo].forEach(c => { c.setAttribute('cx', p.x.toFixed(1)); c.setAttribute('cy', p.y.toFixed(1)); });
+    p.el.style.opacity = p.g.style.opacity = k.toFixed(2);
     p.el.classList.toggle('live', k > .6);
   });
 }
@@ -402,32 +427,29 @@ function drawLink(y){
   const ctx = linkCtx, dpr = Math.min(devicePixelRatio || 1, 2);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, innerWidth, innerHeight);
   const a = st.gd * Math.min(1, st.v);
+  // double trait fin, dégradé cyan → ambre, avec une lueur large et discrète
   const grad = ctx.createLinearGradient(x0, y0, x2, y2);
-  grad.addColorStop(0, 'rgba(41,182,246,.05)'); grad.addColorStop(.5, 'rgba(41,182,246,.6)'); grad.addColorStop(1, 'rgba(41,182,246,.18)');
-  ctx.globalAlpha = a; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(x1, y1, x2, y2);
-  ctx.strokeStyle = grad; ctx.lineWidth = 5; ctx.globalAlpha = a * .22; ctx.stroke();
-  ctx.lineWidth = 1.2; ctx.globalAlpha = a; ctx.stroke();
-  for (let i = 0; i < 22; i++){
-    const t = (i / 22 + time * .16) % 1, [px, py] = at(t);
-    ctx.globalAlpha = a * Math.sin(t * Math.PI) * .9; ctx.fillStyle = '#29B6F6';
-    ctx.beginPath(); ctx.arc(px, py + Math.sin(i * 7.3 + time * 3) * 2.2, i % 4 ? 1.1 : 1.9, 0, 6.2832); ctx.fill();
+  grad.addColorStop(0, '#30B0C7'); grad.addColorStop(.55, '#30B0C7'); grad.addColorStop(1, '#FF5A00');
+  ctx.lineCap = 'round'; ctx.strokeStyle = grad;
+  const arc = off => { ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(x1, y1 + off * 2, x2, y2); ctx.stroke(); };
+  ctx.globalAlpha = a * .16; ctx.lineWidth = 9; arc(0);
+  ctx.globalAlpha = a * .95; ctx.lineWidth = 1.6; arc(-3);
+  ctx.globalAlpha = a * .6; ctx.lineWidth = 1; arc(3);
+  // un point lumineux glisse du boîtier vers l'écran (toutes les 3,2 s ; il arrive à c = 5,2 s, avec la notification)
+  const q = ((c - 2 + 6.4) % 3.2) / 3.2, e = smooth(q);
+  for (let k = 14; k >= 0; k--){
+    const tt = e - k * .011; if (tt < 0) continue;
+    const [px, py] = at(tt);
+    ctx.globalAlpha = a * (1 - k / 15) * (k ? .5 : 1) * Math.min(1, q * 8, (1 - q) * 12);
+    ctx.fillStyle = k ? (tt > .6 ? '#FF5A00' : '#30B0C7') : '#fff';
+    ctx.shadowColor = tt > .6 ? '#FF5A00' : '#30B0C7'; ctx.shadowBlur = k ? 0 : 16;
+    ctx.beginPath(); ctx.arc(px, py, k ? 2.3 - k * .12 : 3.4, 0, 6.2832); ctx.fill();
   }
-  const q = (c - 3.95) / 1.25;
-  if (q > 0 && q < 1){
-    const e = smooth(q);
-    for (let k = 10; k >= 0; k--){
-      const t = e - k * .012; if (t < 0) continue;
-      const [px, py] = at(t);
-      ctx.globalAlpha = a * (1 - k / 11) * (k ? .5 : 1); ctx.fillStyle = '#FF5A00';
-      ctx.shadowColor = '#FF5A00'; ctx.shadowBlur = k ? 0 : 14;
-      ctx.beginPath(); ctx.arc(px, py, k ? 2.4 - k * .15 : 3.6, 0, 6.2832); ctx.fill();
-    }
-    ctx.shadowBlur = 0;
-  }
-  ctx.globalAlpha = 1;
-  const [mxp, myp] = at(.5), half = g.pw / 2;
-  packet.style.transform = `translate3d(${Math.max(12, Math.min(mxp - half, x2 - g.pw - 14)).toFixed(1)}px,${(Math.max(myp, y0, y2) + 34).toFixed(1)}px,0)`;
+  ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+  // pilule au-dessus du milieu de l'arc, sans passer sur l'écran ni sous la barre de navigation
+  const [mxp, myp] = at(.5);
+  const px = Math.max(12, Math.min(mxp - g.pw / 2, x2 - g.pw - 12)), py = Math.max(66, myp - 48);
+  packet.style.transform = `translate3d(${px.toFixed(1)}px,${py.toFixed(1)}px,0)`;
   packet.style.opacity = a.toFixed(2);
   packet.classList.toggle('amber', lock > .5);
 }

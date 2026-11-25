@@ -9,7 +9,7 @@ const TXT = {
     modes: { sound: 'Sonore', light: 'Visuel', both: 'Sonore et visuel', none: 'Aucun' },
     sent: (z, m) => `Signal testé · ${z} · ${m}`,
     nosig: z => `${z} · aucun signal configuré`,
-    recv: 'Signal anonyme reçu · Zone B · Casque manquant',
+    recv: 'Signal reçu · Zone B · Casque manquant',
     exp: 'Démo : aucun fichier n’est créé',
     run: 'En cours', done: 'Clôturée', close: 'Clôturer', reopen: 'Rouvrir'
   },
@@ -19,7 +19,7 @@ const TXT = {
     modes: { sound: 'Sound', light: 'Visual', both: 'Sound and visual', none: 'None' },
     sent: (z, m) => `Signal tested · ${z} · ${m}`,
     nosig: z => `${z} · no signal configured`,
-    recv: 'Anonymous signal received · Zone B · Missing helmet',
+    recv: 'Signal received · Zone B · Missing helmet',
     exp: 'Demo: no file is created',
     run: 'In progress', done: 'Closed', close: 'Close', reopen: 'Reopen'
   }

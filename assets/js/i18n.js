@@ -1,5 +1,6 @@
 // FR (défaut, lu depuis le HTML) / EN
 const EN = {
+  'pk.t':'Anonymous signal · Zone B · 0 images',
   'd.p2':'Local box · Anonymisation',
   'pin.opt':'Optics &amp; local alert',
   'uc.1t':'Industrial sites &amp; workshops',
@@ -12,8 +13,7 @@ const EN = {
   'uc.4d':'Automatic check before entering a regulated area',
   'pin.shell':'Workshop protective shell',
   'pin.core':'AI Core · Raspberry Pi 5',
-  'pk.h':'Anonymous packet in transit',
-  'pk.c':'{ zone: "B", ppe: "Helmet", img: 0 }',
+  
   'dx.k3':'Images stored',
   'dx.zones':'Reminders by zone',
   'dx.norm2':'Per 100 monitored hours',

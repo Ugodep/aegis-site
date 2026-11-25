@@ -9,12 +9,12 @@
 <meta property="og:title" content="AEGIS Pro Tech — L'IA qui protège sans surveiller">
 <meta property="og:description" content="Détection d'EPI par IA, en local, sans image stockée. Projet de 9 étudiants ingénieurs — UMONS.">
 <meta property="og:type" content="website">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%23000'/%3E%3Cpath d='M18 51 32 14l14 37' fill='none' stroke='%23F5F5F7' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M24.5 40h15' stroke='%23FF5A00' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M10 2h12l8 8v12l-8 8H10l-8-8V10z' fill='%23000' stroke='%23F5F5F7' stroke-width='2.200' stroke-linejoin='round'/%3E%3Ccircle cx='16' cy='16' r='6.400' fill='none' stroke='%23F5F5F7' stroke-width='1.600'/%3E%3Cpath d='M16 6.200v3.400M16 22.400v3.400M6.200 16h3.400M22.400 16h3.400' stroke='%23F5F5F7' stroke-width='1.600' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='16' r='2.700' fill='%23FF5A00'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js"}}</script>
-<link rel="stylesheet" href="assets/css/style.css?v=33">
+<link rel="stylesheet" href="assets/css/style.css?v=34">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"AEGIS Pro Tech","description":"Détection d'EPI par IA embarquée sur les caméras existantes. Privacy by Design.","parentOrganization":{"@type":"CollegeOrUniversity","name":"Faculté Polytechnique de Mons (UMONS)"}}</script>
 </head>
 <body>
@@ -42,7 +42,7 @@
 <header class="nav" id="nav">
   <div class="wrap nav-in">
     <a href="#hero" class="logo" aria-label="AEGIS Pro Tech" data-cursor="Haut">
-      <svg viewBox="0 0 64 64" width="30" height="30" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#000"/><rect x=".75" y=".75" width="62.5" height="62.5" rx="14.5" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="1.5"/><path d="M18 51 32 14l14 37" fill="none" stroke="#F5F5F7" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.5 40h15" stroke="#FF5A00" stroke-width="5" stroke-linecap="round"/></svg>
+      <svg class="emblem" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><path d="M10 2h12l8 8v12l-8 8H10l-8-8V10z" fill="none" stroke="#F5F5F7" stroke-width="2.200" stroke-linejoin="round"/><circle cx="16" cy="16" r="6.400" fill="none" stroke="#F5F5F7" stroke-width="1.600"/><path d="M16 6.200v3.400M16 22.400v3.400M6.200 16h3.400M22.400 16h3.400" stroke="#F5F5F7" stroke-width="1.600" stroke-linecap="round"/><circle cx="16" cy="16" r="2.700" fill="#FF5A00"/></svg>
       <span><b>AEGIS</b><em>PRO TECH</em></span>
     </a>
     <nav class="links" id="links">
@@ -95,9 +95,10 @@
 </section>
 
 <div class="pins" id="pins" aria-hidden="true">
-  <div class="pin" data-part="body12167" data-edge="left"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.shell">Coque de protection atelier</span></div>
-  <div class="pin" data-part="body55189" data-pt="-0.035,-0.012,-0.031"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.core">Cœur IA · Raspberry Pi 5</span></div>
-  <div class="pin" data-part="body31097" data-pt="0.080,0.000,-0.039"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.opt">Optique &amp; signal local</span></div>
+  <svg id="pinSvg"></svg>
+  <div class="pin" data-part="body12167" data-edge="left"><span class="pt" data-i18n="pin.shell">Coque de protection atelier</span></div>
+  <div class="pin" data-part="body55189" data-pt="-0.035,-0.012,-0.031"><span class="pt" data-i18n="pin.core">Cœur IA · Raspberry Pi 5</span></div>
+  <div class="pin" data-part="body31097" data-pt="0.080,0.000,-0.039"><span class="pt" data-i18n="pin.opt">Optique &amp; signal local</span></div>
 </div>
 
 <!-- ACTE 3 · ALERTE & PREUVE -->
@@ -105,17 +106,16 @@
   <div class="a3-pin">
     <div class="a3-fade" id="a3Fade">
       <canvas id="a3Link" aria-hidden="true"></canvas>
-      <div class="packet" id="packet" aria-hidden="true"><span data-i18n="pk.h">Paquet anonyme en transit</span><code data-i18n="pk.c">{ zone: "B", epi: "Casque", img: 0 }</code></div>
+      <div class="packet" id="packet" aria-hidden="true"><svg viewBox="0 0 24 24" width="13" height="13"><path d="M6 11h12v9H6zM8.500 11V8a3.500 3.500 0 0 1 7 0v3"/></svg><span data-i18n="pk.t">Signal anonyme · Zone B · 0 image</span></div>
       <div class="station" id="station">
         <div class="st-halo" aria-hidden="true"></div>
         <div class="monitor"><div class="screen"><div class="dx">
   <aside class="dx-rail" aria-hidden="true">
-    <svg viewBox="0 0 24 24" class="sh"><path d="M12 2 20 5v7c0 5-3.500 8.500-8 10-4.500-1.500-8-5-8-10V5z"/></svg>
     <i class="a"></i><i></i><i></i><i></i>
   </aside>
   <div class="dx-main">
     <header class="dx-top">
-      <p><b>AEGIS PRO TECH</b> · <span data-i18n="dx.title">Tableau de bord de sécurité</span></p>
+      <p class="dx-brand"><svg class="dx-emblem" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><path d="M10 2h12l8 8v12l-8 8H10l-8-8V10z" fill="none" stroke="#F5F5F7" stroke-width="2.200" stroke-linejoin="round"/><circle cx="16" cy="16" r="6.400" fill="none" stroke="#F5F5F7" stroke-width="1.600"/><path d="M16 6.200v3.400M16 22.400v3.400M6.200 16h3.400M22.400 16h3.400" stroke="#F5F5F7" stroke-width="1.600" stroke-linecap="round"/><circle cx="16" cy="16" r="2.700" fill="#FF5A00"/></svg><b>AEGIS PRO TECH</b> · <span data-i18n="dx.title">Tableau de bord de sécurité</span></p>
       <p class="dx-stat"><i></i><span data-i18n="dx.online">4 / 4 caméras en ligne · Réseau local</span></p>
     </header>
     <div class="dx-tabs" role="tablist">
@@ -337,12 +337,12 @@
 
 <footer class="foot">
   <div class="wrap foot-in">
-    <a href="#hero" class="logo" data-cursor="Haut"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#000"/><rect x=".75" y=".75" width="62.5" height="62.5" rx="14.5" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="1.5"/><path d="M18 51 32 14l14 37" fill="none" stroke="#F5F5F7" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.5 40h15" stroke="#FF5A00" stroke-width="5" stroke-linecap="round"/></svg><span><b>AEGIS</b><em>PRO TECH</em></span></a>
+    <a href="#hero" class="logo" data-cursor="Haut"><svg class="emblem" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><path d="M10 2h12l8 8v12l-8 8H10l-8-8V10z" fill="none" stroke="#F5F5F7" stroke-width="2.200" stroke-linejoin="round"/><circle cx="16" cy="16" r="6.400" fill="none" stroke="#F5F5F7" stroke-width="1.600"/><path d="M16 6.200v3.400M16 22.400v3.400M6.200 16h3.400M22.400 16h3.400" stroke="#F5F5F7" stroke-width="1.600" stroke-linecap="round"/><circle cx="16" cy="16" r="2.700" fill="#FF5A00"/></svg><span><b>AEGIS</b><em>PRO TECH</em></span></a>
     <p data-i18n="foot">© 2026 AEGIS PRO TECH — Faculté Polytechnique de Mons (UMONS). Tous droits réservés.</p>
   </div>
 </footer>
 
 <script src="assets/vendor/lenis.min.js"></script>
-<script type="module" src="assets/js/main.js?v=32"></script>
+<script type="module" src="assets/js/main.js?v=33"></script>
 </body>
 </html>
