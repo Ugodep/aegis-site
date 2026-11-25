@@ -7,8 +7,8 @@ import { RenderPass } from '../vendor/three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from '../vendor/three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from '../vendor/three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from '../vendor/three/addons/postprocessing/ShaderPass.js';
-import { initProof } from './proof.js?v=34';
-import { initI18n, getLang, msg, onLang, fmtNum } from './i18n.js?v=34';
+import { initProof } from './proof.js?v=35';
+import { initI18n, getLang, msg, onLang, fmtNum } from './i18n.js?v=35';
 
 /* ------------------------------------------------------------------ */
 const HIDE_PARTS = ['body69062', 'body935', 'body27961'];   // pièces du CAD masquées (splitter PoE hors position, optique, plaque)
@@ -252,8 +252,8 @@ const KEYS = [
   K('#architecture', .5, { xv: 1, px: 1.65, py: -.04, s: 1.0, rx: .52, ry: 3.95, rz: -.05, ld: .25 }, { px: 0, py: .8, s: .68 }),
   K('#architecture', .78, { xv: 1, px: 1.65, py: -.04, s: 1.0, rx: .5, ry: 3.82, rz: -.035, ld: .25 }, { px: 0, py: .8, s: .68 }),
   // Acte 3 (épinglé) : boîtier entier en haut à gauche, lentille tournée vers la droite (vers l'écran), faisceau rasant sur la grille
-  K('#preuve', 0, { pin: true, ax: true, px: -1.86, py: .87, s: .66, rx: .3, ry: 5.48, ld: 1, gd: 1 }, { px: -.08, py: 1.52, s: .36 }),
-  K('#preuve', 1, { pin: true, ax: true, px: -1.86, py: .87, s: .66, rx: .3, ry: 5.48, ld: 1, gd: 1 }, { px: -.08, py: 1.52, s: .36 }),
+  K('#preuve', 0, { pin: true, ax: true, px: -1.95, py: .46, s: .6, rx: .3, ry: 5.48, ld: 1, gd: 1 }, { px: -.08, py: 1.52, s: .36 }),
+  K('#preuve', 1, { pin: true, ax: true, px: -1.95, py: .46, s: .6, rx: .3, ry: 5.48, ld: 1, gd: 1 }, { px: -.08, py: 1.52, s: .36 }),
   // Acte 4 : au centre de la moitié haute, manipulable à 360°
   K('#boitier', .5, { px: 0, py: .78, s: .95, rx: .6, ry: 3.3 }, { py: 1.0, s: .66 }),
   // le canvas disparaît avant le dossier B2B : le boîtier ne passe jamais derrière le titre
@@ -421,15 +421,16 @@ function windowPoint(lx, ly){
   const f = reduced ? 1 : 1700 / (1700 - z2);                                // scale puis perspective
   return [g.l + g.w + x2 * k * f, g.t - .02 * g.h + y1 * k * f];             // -.02 h : translate(0,-52 %) du poste
 }
-// boîte englobante à l'écran du boîtier, pour que la pilule ne passe jamais sur la visière
+// boîte englobante à l'écran du boîtier : la pilule ne passe jamais sur la visière
 const _c = new THREE.Vector3();
-function deviceBottom(shift){
-  let bottom = 0;
+function deviceBox(shift){
+  const r = { right: 0, bottom: 0 };
   for (let i = 0; i < 8; i++){
     _c.set((i & 1 ? 1 : -1) * NORM / 2, (i & 2 ? 1 : -1) * .023, (i & 4 ? 1 : -1) * .04).applyMatrix4(rig.matrixWorld).project(camera);
-    bottom = Math.max(bottom, (-_c.y * .5 + .5) * innerHeight - shift);
+    r.right = Math.max(r.right, (_c.x * .5 + .5) * innerWidth);
+    r.bottom = Math.max(r.bottom, (-_c.y * .5 + .5) * innerHeight - shift);
   }
-  return bottom;
+  return r;
 }
 
 function drawLink(y){
@@ -443,43 +444,37 @@ function drawLink(y){
   _v.set(...BEAM.pos).applyMatrix4(rig.matrixWorld).project(camera);
   const x0 = (_v.x * .5 + .5) * innerWidth, y0 = (-_v.y * .5 + .5) * innerHeight - shift;
   const g = M.st;
-  const [x2, y2] = windowPoint(g.wl, g.wt + g.wh * .5);      // bord gauche exact de .glass-win, transformation 3D comprise
-  const x1 = x0 + (x2 - x0) * .5, y1 = Math.min(y0, y2) - 62;
-  const at = t => { const u = 1 - t; return [u * u * x0 + 2 * u * t * x1 + t * t * x2, u * u * y0 + 2 * u * t * y1 + t * t * y2]; };
+  // hauteur de la liaison = celle de la lentille ; on cherche le point du bord gauche de la fenêtre à cette même hauteur
+  const yTop = windowPoint(g.wl, g.wt)[1], yBot = windowPoint(g.wl, g.wt + g.wh)[1];
+  const ly = clamp(y0, yTop + 24, yBot - 24);
+  const x2 = windowPoint(g.wl, g.wt + g.wh * clamp((ly - yTop) / (yBot - yTop || 1), 0, 1))[0];
   const ctx = linkCtx, dpr = Math.min(devicePixelRatio || 1, 2);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, innerWidth, innerHeight);
   const a = st.gd * Math.min(1, st.v);
-  // double trait fin, dégradé cyan → ambre, avec une lueur large et discrète
-  const grad = ctx.createLinearGradient(x0, y0, x2, y2);
-  grad.addColorStop(0, '#30B0C7'); grad.addColorStop(.55, '#30B0C7'); grad.addColorStop(1, '#FF5A00');
-  ctx.lineCap = 'round'; ctx.strokeStyle = grad;
-  const arc = off => { ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(x1, y1 + off * 2, x2, y2); ctx.stroke(); };
-  ctx.globalAlpha = a * .16; ctx.lineWidth = 9; arc(0);
-  ctx.globalAlpha = a * .95; ctx.lineWidth = 1.6; arc(-3);
-  ctx.globalAlpha = a * .6; ctx.lineWidth = 1; arc(3);
-  // un point lumineux glisse du boîtier vers l'écran (toutes les 3,2 s ; il arrive à c = 5,2 s, avec la notification)
-  const q = ((c - 2 + 6.4) % 3.2) / 3.2, e = smooth(q);
-  for (let k = 14; k >= 0; k--){
-    const tt = e - k * .011; if (tt < 0) continue;
-    const [px, py] = at(tt);
-    ctx.globalAlpha = a * (1 - k / 15) * (k ? .5 : 1) * Math.min(1, q * 8, (1 - q) * 12);
-    ctx.fillStyle = k ? (tt > .6 ? '#FF5A00' : '#30B0C7') : '#fff';
-    ctx.shadowColor = tt > .6 ? '#FF5A00' : '#30B0C7'; ctx.shadowBlur = k ? 0 : 16;
-    ctx.beginPath(); ctx.arc(px, py, k ? 2.3 - k * .12 : 3.4, 0, 6.2832); ctx.fill();
+  if (x2 - x0 < 12){ clearLink(); return; }
+  const yy = Math.round(ly) + .5;                       // trait net de 1 px
+  const base = ctx.createLinearGradient(x0, 0, x2, 0);
+  base.addColorStop(0, 'rgba(245,245,247,.12)'); base.addColorStop(.5, 'rgba(245,245,247,.34)'); base.addColorStop(1, 'rgba(245,245,247,.2)');
+  ctx.globalAlpha = a; ctx.fillStyle = base; ctx.fillRect(x0, yy - .5, x2 - x0, 1);
+  // impulsion discrète, uniquement à l'envoi du signal (elle atteint la fenêtre à c = 5,2 s, avec la notification)
+  const q = (c - 3.95) / 1.25;
+  if (q > 0 && q < 1){
+    const head = x0 + (x2 - x0) * smooth(q), tail = Math.max(x0, head - 70);
+    const pg = ctx.createLinearGradient(tail, 0, head, 0);
+    pg.addColorStop(0, 'rgba(255,90,0,0)'); pg.addColorStop(1, 'rgba(255,138,61,.95)');
+    ctx.globalAlpha = a * Math.min(1, q * 8, (1 - q) * 10);
+    ctx.fillStyle = pg; ctx.fillRect(tail, yy - 1, head - tail, 2);
+    ctx.shadowColor = '#FF5A00'; ctx.shadowBlur = 9; ctx.fillStyle = '#ffd2b0';
+    ctx.beginPath(); ctx.arc(head, yy, 1.8, 0, 6.2832); ctx.fill(); ctx.shadowBlur = 0;
   }
-  ctx.shadowBlur = 0; ctx.globalAlpha = 1;
-  // prises lumineuses aux deux extrémités : l'arc part de l'optique et se branche sur le bord de la fenêtre
-  [[x0, y0, '#30B0C7'], [x2, y2, '#FF5A00']].forEach(([ex, ey, col]) => {
-    ctx.globalAlpha = a * .3; ctx.fillStyle = col; ctx.beginPath(); ctx.arc(ex, ey, 7, 0, 6.2832); ctx.fill();
-    ctx.globalAlpha = a; ctx.beginPath(); ctx.arc(ex, ey, 2.8, 0, 6.2832); ctx.fill();
-  });
   ctx.globalAlpha = 1;
-  // pilule SOUS l'arc : sous le point le plus bas de la courbe sur sa largeur, sous le boîtier, au-dessus du titre, hors de la fenêtre
-  const [mxp] = at(.5);
-  const px = Math.max(12, Math.min(mxp - g.pw / 2, x2 - g.pw - 18));
-  let under = deviceBottom(shift) + 16;
-  for (let n = 0; n <= 24; n++){ const [qx, qy] = at(n / 24); if (qx >= px - 8 && qx <= px + g.pw + 8) under = Math.max(under, qy + 18); }
-  const py = Math.min(under, g.titleTop - g.ph - 14);
+  // pilule au milieu de l'espace libre, à droite du boîtier, juste au-dessus du trait ;
+  // si l'espace est trop étroit (autre format d'écran), elle passe sous le boîtier plutôt que sur lui
+  const box = deviceBox(shift), left = box.right + 8, right = x2 - 10;
+  let px, py;
+  if (right - left >= g.pw){ px = (left + right - g.pw) / 2; py = yy - g.ph - 14; }
+  else { px = Math.max(12, right - g.pw); py = Math.max(yy, box.bottom) + 14; }
+  py = clamp(py, 66, g.titleTop - g.ph - 14);
   packet.style.transform = `translate3d(${px.toFixed(1)}px,${py.toFixed(1)}px,0)`;
   packet.style.opacity = a.toFixed(2);
   packet.classList.toggle('amber', lock > .5);
@@ -537,7 +532,7 @@ function renderGL(dt, y){
   halo.position.x = rig.position.x * .7; halo.position.y = rig.position.y * .7;
   floorGlow.position.set(rig.position.x, rig.position.y - (.36 + st.xv * .42) * s, rig.position.z - .6);
   floorGlow.scale.set(4.4 * s, 1.2 * s, 1);
-  floorGlow.material.opacity = (1 - clamp(st.lz * 1.6, 0, 1)) * (1 - clamp(st.fh * .8, 0, .8));
+  floorGlow.material.opacity = (1 - clamp(st.lz * 1.6, 0, 1)) * (1 - clamp(st.fh * .8, 0, .8)) * (1 - st.gd);
   dust.rotation.y = time * .02; dust.position.y = (y * .0007) % 5; dust.position.z = st.pz * .5;
   // faisceau optique (étape 1)
   if (st.bm > .01){

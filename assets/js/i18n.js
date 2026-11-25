@@ -1,10 +1,10 @@
 // FR (défaut, lu depuis le HTML) / EN
 const EN = {
+  'pk.a':'Anonymous signal','pk.b':'Zone B · 0 images','dx.stored':'Images stored',
   'dx.helm':'Helmet',
   'dx.vest':'Vest',
   'dx.local':'Local signal',
-  'dx.zero':'0 images recorded',
-  'pk.t':'Anonymous signal · Zone B · 0 images',
+  
   'd.p2':'Local box · Anonymisation',
   'pin.opt':'Optics &amp; local alert',
   'uc.1t':'Industrial sites &amp; workshops',
