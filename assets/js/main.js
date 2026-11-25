@@ -7,8 +7,8 @@ import { RenderPass } from '../vendor/three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from '../vendor/three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from '../vendor/three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from '../vendor/three/addons/postprocessing/ShaderPass.js';
-import { initProof } from './proof.js?v=33';
-import { initI18n, getLang, msg, onLang, fmtNum } from './i18n.js?v=33';
+import { initProof } from './proof.js?v=34';
+import { initI18n, getLang, msg, onLang, fmtNum } from './i18n.js?v=34';
 
 /* ------------------------------------------------------------------ */
 const HIDE_PARTS = ['body69062', 'body935', 'body27961'];   // pièces du CAD masquées (splitter PoE hors position, optique, plaque)
@@ -252,8 +252,8 @@ const KEYS = [
   K('#architecture', .5, { xv: 1, px: 1.65, py: -.04, s: 1.0, rx: .52, ry: 3.95, rz: -.05, ld: .25 }, { px: 0, py: .8, s: .68 }),
   K('#architecture', .78, { xv: 1, px: 1.65, py: -.04, s: 1.0, rx: .5, ry: 3.82, rz: -.035, ld: .25 }, { px: 0, py: .8, s: .68 }),
   // Acte 3 (épinglé) : boîtier entier en haut à gauche, lentille tournée vers la droite (vers l'écran), faisceau rasant sur la grille
-  K('#preuve', 0, { pin: true, ax: true, px: -1.74, py: .76, s: .7, rx: .3, ry: 5.48, ld: 1, gd: 1 }, { px: -.08, py: 1.52, s: .36 }),
-  K('#preuve', 1, { pin: true, ax: true, px: -1.74, py: .76, s: .7, rx: .3, ry: 5.48, ld: 1, gd: 1 }, { px: -.08, py: 1.52, s: .36 }),
+  K('#preuve', 0, { pin: true, ax: true, px: -1.86, py: .87, s: .66, rx: .3, ry: 5.48, ld: 1, gd: 1 }, { px: -.08, py: 1.52, s: .36 }),
+  K('#preuve', 1, { pin: true, ax: true, px: -1.86, py: .87, s: .66, rx: .3, ry: 5.48, ld: 1, gd: 1 }, { px: -.08, py: 1.52, s: .36 }),
   // Acte 4 : au centre de la moitié haute, manipulable à 360°
   K('#boitier', .5, { px: 0, py: .78, s: .95, rx: .6, ry: 3.3 }, { py: 1.0, s: .66 }),
   // le canvas disparaît avant le dossier B2B : le boîtier ne passe jamais derrière le titre
@@ -410,19 +410,41 @@ function clearLink(){
   if (!linkOn) return;
   linkOn = false; linkCtx.clearRect(0, 0, linkCv.width, linkCv.height); packet.style.opacity = 0;
 }
+// Reproduit la transformation CSS du poste : perspective(1700px) scale() rotateY() rotateX(), origine au milieu du bord droit.
+// (lx, ly) : point en coordonnées de mise en page du poste ; renvoie sa position réelle à l'écran, sans lecture de layout par frame.
+function windowPoint(lx, ly){
+  const g = M.st, sc = 1.15 - .15 * pullQ, rad = Math.PI / 180;
+  const a = reduced ? 0 : (-8 + 4 * pullQ) * rad, b = reduced ? 0 : 1.5 * pullQ * rad, k = reduced ? 1 : sc;
+  const x = lx - g.w, y = ly - g.h / 2;
+  const y1 = y * Math.cos(b), z1 = y * Math.sin(b);                          // rotateX
+  const x2 = x * Math.cos(a) + z1 * Math.sin(a), z2 = -x * Math.sin(a) + z1 * Math.cos(a);   // rotateY
+  const f = reduced ? 1 : 1700 / (1700 - z2);                                // scale puis perspective
+  return [g.l + g.w + x2 * k * f, g.t - .02 * g.h + y1 * k * f];             // -.02 h : translate(0,-52 %) du poste
+}
+// boîte englobante à l'écran du boîtier, pour que la pilule ne passe jamais sur la visière
+const _c = new THREE.Vector3();
+function deviceBottom(shift){
+  let bottom = 0;
+  for (let i = 0; i < 8; i++){
+    _c.set((i & 1 ? 1 : -1) * NORM / 2, (i & 2 ? 1 : -1) * .023, (i & 4 ? 1 : -1) * .04).applyMatrix4(rig.matrixWorld).project(camera);
+    bottom = Math.max(bottom, (-_c.y * .5 + .5) * innerHeight - shift);
+  }
+  return bottom;
+}
+
 function drawLink(y){
   const { c, lock } = detection();
   const isLock = st.gd > .85 && c > 5.15 && c < 5.9;   // la notification arrive quand l'impulsion atteint l'écran
   if (isLock && !locked && proof) proof.pulse();
   locked = isLock;
-  if (isMobile() || st.gd < .05 || !M.st){ clearLink(); return; }
+  if (isMobile() || st.gd < .05 || !M.st || activeSec !== 3){ clearLink(); return; }   // jamais d'arc sans fenêtre visible
   linkOn = true;
   const top3 = M.secTops[3], shift = y < top3 ? top3 - y : Math.min(0, top3 + M.a3Len - y);   // décalage de la section épinglée
   _v.set(...BEAM.pos).applyMatrix4(rig.matrixWorld).project(camera);
   const x0 = (_v.x * .5 + .5) * innerWidth, y0 = (-_v.y * .5 + .5) * innerHeight - shift;
-  const g = M.st, sc = 1.15 - .15 * pullQ, ang = (7 - 4 * pullQ) * Math.PI / 180;
-  const x2 = g.l + g.w - g.w * sc * Math.cos(ang) - 3, y2 = g.t - .02 * g.h + (g.mh - g.h) / 2 * sc;
-  const x1 = (x0 + x2) / 2, y1 = Math.min(y0, y2) - 80;
+  const g = M.st;
+  const [x2, y2] = windowPoint(g.wl, g.wt + g.wh * .5);      // bord gauche exact de .glass-win, transformation 3D comprise
+  const x1 = x0 + (x2 - x0) * .5, y1 = Math.min(y0, y2) - 62;
   const at = t => { const u = 1 - t; return [u * u * x0 + 2 * u * t * x1 + t * t * x2, u * u * y0 + 2 * u * t * y1 + t * t * y2]; };
   const ctx = linkCtx, dpr = Math.min(devicePixelRatio || 1, 2);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, innerWidth, innerHeight);
@@ -446,9 +468,18 @@ function drawLink(y){
     ctx.beginPath(); ctx.arc(px, py, k ? 2.3 - k * .12 : 3.4, 0, 6.2832); ctx.fill();
   }
   ctx.shadowBlur = 0; ctx.globalAlpha = 1;
-  // pilule au-dessus du milieu de l'arc, sans passer sur l'écran ni sous la barre de navigation
-  const [mxp, myp] = at(.5);
-  const px = Math.max(12, Math.min(mxp - g.pw / 2, x2 - g.pw - 12)), py = Math.max(66, myp - 48);
+  // prises lumineuses aux deux extrémités : l'arc part de l'optique et se branche sur le bord de la fenêtre
+  [[x0, y0, '#30B0C7'], [x2, y2, '#FF5A00']].forEach(([ex, ey, col]) => {
+    ctx.globalAlpha = a * .3; ctx.fillStyle = col; ctx.beginPath(); ctx.arc(ex, ey, 7, 0, 6.2832); ctx.fill();
+    ctx.globalAlpha = a; ctx.beginPath(); ctx.arc(ex, ey, 2.8, 0, 6.2832); ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+  // pilule SOUS l'arc : sous le point le plus bas de la courbe sur sa largeur, sous le boîtier, au-dessus du titre, hors de la fenêtre
+  const [mxp] = at(.5);
+  const px = Math.max(12, Math.min(mxp - g.pw / 2, x2 - g.pw - 18));
+  let under = deviceBottom(shift) + 16;
+  for (let n = 0; n <= 24; n++){ const [qx, qy] = at(n / 24); if (qx >= px - 8 && qx <= px + g.pw + 8) under = Math.max(under, qy + 18); }
+  const py = Math.min(under, g.titleTop - g.ph - 14);
   packet.style.transform = `translate3d(${px.toFixed(1)}px,${py.toFixed(1)}px,0)`;
   packet.style.opacity = a.toFixed(2);
   packet.classList.toggle('amber', lock > .5);
@@ -560,8 +591,9 @@ function measure(){
   const sr = stageEl.getBoundingClientRect(); M.stageC = sr.top + sy + sr.height / 2;
   M.doc = document.documentElement.scrollHeight - innerHeight;
   M.a3Len = Math.max(1, sections[3].offsetHeight - innerHeight);
-  const mon = $('.monitor', station);
-  M.st = { l: station.offsetLeft, t: station.offsetTop, w: station.offsetWidth, h: station.offsetHeight, mh: mon.offsetHeight, pw: $('#packet').offsetWidth || 250 };
+  const win = $('.glass-win', station), pk = $('#packet');
+  M.st = { l: station.offsetLeft, t: station.offsetTop, w: station.offsetWidth, h: station.offsetHeight,
+    wl: win.offsetLeft, wt: win.offsetTop, wh: win.offsetHeight, pw: pk.offsetWidth || 250, ph: pk.offsetHeight || 34, titleTop: $('#preuve .act-t').offsetTop };
   const cv = $('#a3Link'), dpr = Math.min(devicePixelRatio || 1, 2), W = Math.round(innerWidth * dpr), H = Math.round(innerHeight * dpr);
   if (cv.width !== W || cv.height !== H){ cv.width = W; cv.height = H; }
   pullPrev = -1;
@@ -602,7 +634,7 @@ function updateUI(y){
   if (Math.abs(q - pullPrev) > .001){
     pullPrev = q;
     const mob = isMobile(), sc = mob ? 1.06 - .06 * q : 1.15 - .15 * q;
-    station.style.transform = reduced ? 'none' : `perspective(1700px) scale(${sc.toFixed(4)}) rotateY(${mob ? 0 : (-7 + 4 * q).toFixed(2)}deg) rotateX(${mob ? 0 : (1.5 * q).toFixed(2)}deg)`;
+    station.style.transform = reduced ? 'none' : `perspective(1700px) scale(${sc.toFixed(4)}) rotateY(${mob ? 0 : (-8 + 4 * q).toFixed(2)}deg) rotateX(${mob ? 0 : (1.5 * q).toFixed(2)}deg)`;
   }
   // le titre et l'écran s'effacent dès que la section quitte l'écran : le boîtier ne traverse jamais le texte
   const fade = 1 - clamp((y - top3 - M.a3Len) / (vh * .26), 0, 1);

@@ -11,7 +11,8 @@ const TXT = {
     nosig: z => `${z} · aucun signal configuré`,
     recv: 'Signal reçu · Zone B · Casque manquant',
     exp: 'Démo : aucun fichier n’est créé',
-    run: 'En cours', done: 'Clôturée', close: 'Clôturer', reopen: 'Rouvrir'
+    run: 'En cours', done: 'Clôturée', close: 'Clôturer', reopen: 'Rouvrir',
+    missing: 'Manquant', ok: 'Conforme', sigOn: 'Actif', sigIdle: 'En veille'
   },
   en: {
     zones: { A: 'Zone A · Entrance', B: 'Zone B · Workshop', C: 'Zone C · Dock' },
@@ -21,7 +22,8 @@ const TXT = {
     nosig: z => `${z} · no signal configured`,
     recv: 'Signal received · Zone B · Missing helmet',
     exp: 'Demo: no file is created',
-    run: 'In progress', done: 'Closed', close: 'Close', reopen: 'Reopen'
+    run: 'In progress', done: 'Closed', close: 'Close', reopen: 'Reopen',
+    missing: 'Missing', ok: 'Compliant', sigOn: 'Active', sigIdle: 'Standby'
   }
 };
 
@@ -36,7 +38,7 @@ const CAMS = {
 export function initProof({ root, getLang = () => 'fr' }){
   const $ = s => root.querySelector(s), $$ = s => [...root.querySelectorAll(s)];
   const t = () => TXT[getLang()] || TXT.fr;
-  const toast = $('.dx-toast'), cams = $$('.dx-cam'), zones = $$('.dx-z'), tabs = $$('.dx-tabs button'), panes = $$('.dx-pane');
+  const toast = $('.dx-toast'), cams = $$('.dx-cam'), zones = $$('.dx-z'), tabs = $$('.dx-tabs button'), railBtns = $$('.dx-rail button'), panes = $$('.dx-pane');
   let cur = 'c2', toastTimer = 0, lastToast = null;
 
   function showToast(fn, kind = 'ok'){
@@ -57,11 +59,16 @@ export function initProof({ root, getLang = () => 'fr' }){
     $('#dxZone').textContent = L.zones[c.zone];
     $('#dxIssue').textContent = c.recall ? L.recall : L.clear;
     $('.dx-side').dataset.alert = c.recall ? '1' : '0';
+    const state = (sel, text, kind) => { const el = $(sel); el.textContent = text; el.dataset.s = kind; };
+    state('#dxHelm', c.recall ? L.missing : L.ok, c.recall ? 'bad' : 'ok');
+    state('#dxVest', L.ok, 'ok');
+    state('#dxSig', c.recall ? L.sigOn : L.sigIdle, c.recall ? 'warn' : 'idle');
   }
 
   function tab(name){
     tabs.forEach(b => { const on = b.dataset.tab === name; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
     panes.forEach(p => p.classList.toggle('on', p.dataset.pane === name));
+    railBtns.forEach(b => b.classList.toggle('on', b.dataset.tab === name));
   }
 
   // plan d'actions : clôturer / rouvrir une action (démo, rien n'est enregistré)
@@ -82,7 +89,7 @@ export function initProof({ root, getLang = () => 'fr' }){
     el.addEventListener('click', e => { e.stopPropagation(); fn(); });
     el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fn(); } });
   };
-  tabs.forEach(b => b.addEventListener('click', () => tab(b.dataset.tab)));
+  [...tabs, ...railBtns].forEach(b => b.addEventListener('click', () => tab(b.dataset.tab)));
   cams.forEach(p => activate(p, () => select(p.dataset.cam)));
   zones.forEach(z => activate(z, () => select(z.dataset.first)));
   $$('.dx-test').forEach(b => b.addEventListener('click', () => {
