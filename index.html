@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js"}}</script>
-<link rel="stylesheet" href="assets/css/style.css?v=29">
+<link rel="stylesheet" href="assets/css/style.css?v=30">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"AEGIS Pro Tech","description":"Détection d'EPI par IA embarquée sur les caméras existantes. Privacy by Design.","parentOrganization":{"@type":"CollegeOrUniversity","name":"Faculté Polytechnique de Mons (UMONS)"}}</script>
 </head>
 <body>
@@ -26,6 +26,7 @@
   <div class="ld-txt mono"><span id="ldPct">0</span>%</div>
 </div>
 
+<div id="depth" aria-hidden="true"><span data-a="1">EDGE AI</span><span data-a="2">30 FPS</span><span data-a="3">ZERO DATA</span><span data-a="4">UMONS</span></div>
 <canvas id="gl" aria-hidden="true"></canvas>
 <nav class="rail" id="rail" aria-label="Actes">
   <a href="#hero" title="Accueil" aria-label="Acte 0"><i></i></a>
@@ -52,6 +53,7 @@
       <a href="#dossier" data-i18n="nav.dossier">Dossier</a>
     </nav>
     <div class="nav-r">
+      <button class="cine" id="cine" type="button" data-i18n="cine">▶ Cinéma</button>
       <button class="lang mono" id="lang" aria-label="Changer de langue"><span class="on">FR</span><span>EN</span></button>
       <a href="#contact" class="btn btn-sm" data-i18n="cta.demo">Demander une démo</a>
       <button class="burger" id="burger" aria-label="Menu"><i></i><i></i></button>
@@ -100,40 +102,86 @@
 
 <!-- ACTE 3 · ALERTE & PREUVE -->
 <section id="preuve" class="act a3">
-  <div class="glass-win" id="proofWin">
-    <div class="cam3d cmp" id="cam3d" data-scn="missing">
-      <img class="cmp-img" id="cmpImg" src="assets/img/yolo-sans.jpg?v=9" width="940" height="677" alt="Capture terrain du prototype AEGIS : personne sans casque ni gants, visage flouté" decoding="async">
-      <canvas id="cmpOv" aria-hidden="true"></canvas>
-      <div class="cam-hud mono">
-        <div class="tl"><span class="rec"></span> REC · CAM 03 · ZONE B</div>
-        <div class="tr" id="camTime">--:--:--</div>
-        <div class="bl"><span data-i18n="demo.local">TRAITEMENT 100 % LOCAL</span> · <span id="camFps">30</span> FPS</div>
+  <div class="a3-pin">
+    <div class="a3-fade" id="a3Fade">
+      <div class="station" id="station">
+        <div class="st-halo" aria-hidden="true"></div>
+        <div class="monitor"><div class="screen"><div class="dx">
+  <aside class="dx-rail" aria-hidden="true">
+    <svg viewBox="0 0 24 24" class="sh"><path d="M12 2 20 5v7c0 5-3.500 8.500-8 10-4.500-1.500-8-5-8-10V5z"/></svg>
+    <i class="a"></i><i></i><i></i><i></i>
+  </aside>
+  <div class="dx-main">
+    <header class="dx-top">
+      <p><b>AEGIS PRO TECH</b> · <span data-i18n="dx.title">Tableau de bord de sécurité</span></p>
+      <p class="dx-stat"><i></i><span data-i18n="dx.online">37 caméras en ligne · Réseau local</span></p>
+    </header>
+    <div class="dx-bar">
+      <div class="dx-tabs" role="tablist">
+        <button type="button" role="tab" class="on" aria-selected="true" data-tab="over" data-i18n="dx.t1">Vue d'ensemble</button>
+        <button type="button" role="tab" aria-selected="false" data-tab="report" data-i18n="dx.t2">Rapport de prévention</button>
+        <button type="button" role="tab" aria-selected="false" data-tab="alerts" data-i18n="dx.t3">Alertes</button>
       </div>
-      <span class="g-badge b-on" data-i18n="g.badge">Visage flouté · 0 ms</span>
-      <span class="g-badge b-off" data-i18n="g.off">Caméra standard · Aucune détection</span>
-      <div class="cam-note" data-i18n="cmp.note">Aucune alerte locale déclenchée : l'oubli d'EPI passe inaperçu.</div>
-      <div class="cam-alert" id="camAlert"><i></i><span class="mono" data-i18n="demo.alert">SIGNAL LOCAL ACTIVÉ</span></div>
+      <span class="dx-demo" data-i18n="dx.demo">Données de démonstration</span>
     </div>
-    <div class="win-bar">
-      <div class="ios" id="seg" data-v="0" role="group" aria-label="Avec ou sans Aegis"><button class="on" data-m="1" data-i18n="seg.on">Avec Aegis</button><button data-m="0" data-i18n="seg.off">Sans Aegis</button></div>
-      <div class="ios" id="cmpScn" data-v="0" role="group" aria-label="Scénario"><button class="on" data-s="missing" data-i18n="cmp.s1">Casque oublié</button><button data-s="equipped" data-i18n="cmp.s2">Équipé</button></div>
+
+    <div class="dx-pane on" data-pane="over">
+      <div class="dx-grid">
+        <div class="dx-card dx-mapw"><svg class="dx-map" viewBox="0 0 400 230" role="group" aria-label="Plan du site"><path class="road" d="M0 112H400M196 0V230"/><g class="dx-b"><rect x="22" y="20" width="146" height="70" rx="5"/><text x="32" y="38">1</text></g><g class="dx-b"><rect x="230" y="18" width="70" height="66" rx="5"/><text x="240" y="36">2</text></g><g class="dx-b"><rect x="316" y="18" width="62" height="66" rx="5"/><text x="326" y="36">3</text></g><g class="dx-b"><rect x="24" y="136" width="92" height="74" rx="5"/><text x="34" y="154">4</text></g><g class="dx-b"><rect x="132" y="136" width="48" height="74" rx="5"/><text x="142" y="154">5</text></g><g class="dx-b"><rect x="224" y="138" width="154" height="70" rx="5"/><text x="234" y="156">6</text></g><g class="dx-cam warn" data-cam="c1" transform="translate(150 82)" tabindex="0" role="button" aria-label="Caméra 01"><path class="cone" d="M0 0 L46 -17 A49 49 0 0 1 46 17 Z" transform="rotate(205)"/><circle class="hit-r" r="6"/><circle class="dot" r="5.5"/><circle r="13" fill="transparent"/></g><g class="dx-cam ok" data-cam="c2" transform="translate(238 76)" tabindex="0" role="button" aria-label="Caméra 02"><path class="cone" d="M0 0 L46 -17 A49 49 0 0 1 46 17 Z" transform="rotate(40)"/><circle class="hit-r" r="6"/><circle class="dot" r="5.5"/><circle r="13" fill="transparent"/></g><g class="dx-cam warn" data-cam="c3" transform="translate(368 76)" tabindex="0" role="button" aria-label="Caméra 03"><path class="cone" d="M0 0 L46 -17 A49 49 0 0 1 46 17 Z" transform="rotate(150)"/><circle class="hit-r" r="6"/><circle class="dot" r="5.5"/><circle r="13" fill="transparent"/></g><g class="dx-cam ok" data-cam="c4" transform="translate(34 146)" tabindex="0" role="button" aria-label="Caméra 04"><path class="cone" d="M0 0 L46 -17 A49 49 0 0 1 46 17 Z" transform="rotate(35)"/><circle class="hit-r" r="6"/><circle class="dot" r="5.5"/><circle r="13" fill="transparent"/></g><g class="dx-cam ok" data-cam="c5" transform="translate(172 200)" tabindex="0" role="button" aria-label="Caméra 05"><path class="cone" d="M0 0 L46 -17 A49 49 0 0 1 46 17 Z" transform="rotate(235)"/><circle class="hit-r" r="6"/><circle class="dot" r="5.5"/><circle r="13" fill="transparent"/></g></svg></div>
+        <div class="dx-card dx-side" data-alert="1">
+          <small id="dxCam">Caméra 01</small>
+          <h4 id="dxZone">Zone B · Bâtiment industriel 1</h4>
+          <p class="iss" id="dxIssue">Casque manquant</p>
+          <p class="sta"><i></i><span id="dxState">Signal local activé</span></p>
+        </div>
+      </div>
+      <div class="dx-kpis">
+        <div class="dx-card k1"><small data-i18n="dx.k1">Images stockées</small><b>0</b></div>
+        <div class="dx-card k2"><small data-i18n="dx.k2">Latence</small><b>30 ms</b></div>
+        <div class="dx-card k3"><small data-i18n="dx.k3">Traitement local</small><b>100 %</b></div>
+      </div>
     </div>
-    <div class="stats">
-      <div class="stat"><span data-i18n="demo.s1">Personnes analysées</span><b id="stP">0</b></div>
-      <div class="stat"><span data-i18n="demo.s2">EPI conformes</span><b class="ok" id="stOk">0</b></div>
-      <div class="stat"><span data-i18n="demo.s3">Alertes locales</span><b class="bad" id="stAl">0</b></div>
-      <div class="stat"><span data-i18n="demo.s4">Images stockées</span><b class="cy">0</b></div>
+
+    <div class="dx-pane" data-pane="report">
+      <div class="dx-rhead"><div><h4 data-i18n="dx.r1">Rapport hebdomadaire</h4><small data-i18n="dx.r2">Généré automatiquement</small></div><button type="button" id="dxExport" class="dx-btn" data-i18n="dx.exp">Exporter PDF / CSV</button></div>
+      <div class="dx-card dx-synth"><b data-i18n="dx.syn">Synthèse sans accident</b><span data-i18n="dx.syn2">Aucun accident déclaré sur la période. 3 écarts d'EPI signalés, tous anonymes.</span></div>
+      <div class="dx-two">
+        <div class="dx-card"><h5 data-i18n="dx.zones">Analyse par zone</h5>
+          <ul class="dx-bars"><li><span>Zone B</span><i style="--v:100%"></i><em>2</em></li><li><span>Zone C</span><i style="--v:50%"></i><em>1</em></li><li><span>Zone A</span><i style="--v:3%"></i><em>0</em></li><li><span>Zone D</span><i style="--v:3%"></i><em>0</em></li></ul>
+        </div>
+        <div class="dx-card dx-donutw"><h5 data-i18n="dx.types">Types d'écarts</h5><div class="dx-donut"></div>
+          <p class="dx-leg"><span><i class="o"></i><span data-i18n="dx.helmet">Casque (2)</span></span><span><i class="v"></i><span data-i18n="dx.glv">Gants (1)</span></span></p>
+        </div>
+      </div>
     </div>
+
+    <div class="dx-pane" data-pane="alerts">
+      <div class="dx-card dx-tblw">
+        <table class="dx-tbl">
+          <thead><tr><th data-i18n="dx.zcol">Zone</th><th data-i18n="dx.a1">Alerte</th><th data-i18n="dx.a2">Parole</th><th data-i18n="dx.a3">Lumière</th><th></th></tr></thead>
+          <tbody><tr><th scope="row"><span data-i18n="dx.z1">Bâtiment industriel 1</span></th><td><button type="button" class="dx-chk" aria-pressed="true"><i></i></button></td><td><button type="button" class="dx-chk" aria-pressed="true"><i></i></button></td><td><button type="button" class="dx-chk" aria-pressed="true"><i></i></button></td><td><button type="button" class="dx-test" data-bld="1" data-i18n="dx.test">Tester le signal</button></td></tr><tr><th scope="row"><span data-i18n="dx.z2">Bâtiment industriel 2</span></th><td><button type="button" class="dx-chk" aria-pressed="true"><i></i></button></td><td><button type="button" class="dx-chk" aria-pressed="false"><i></i></button></td><td><button type="button" class="dx-chk" aria-pressed="true"><i></i></button></td><td><button type="button" class="dx-test" data-bld="2" data-i18n="dx.test">Tester le signal</button></td></tr><tr><th scope="row"><span data-i18n="dx.z3">Bâtiment industriel 3</span></th><td><button type="button" class="dx-chk" aria-pressed="true"><i></i></button></td><td><button type="button" class="dx-chk" aria-pressed="true"><i></i></button></td><td><button type="button" class="dx-chk" aria-pressed="false"><i></i></button></td><td><button type="button" class="dx-test" data-bld="3" data-i18n="dx.test">Tester le signal</button></td></tr><tr><th scope="row"><span data-i18n="dx.z4">Bâtiment industriel 4</span></th><td><button type="button" class="dx-chk" aria-pressed="false"><i></i></button></td><td><button type="button" class="dx-chk" aria-pressed="false"><i></i></button></td><td><button type="button" class="dx-chk" aria-pressed="true"><i></i></button></td><td><button type="button" class="dx-test" data-bld="4" data-i18n="dx.test">Tester le signal</button></td></tr></tbody>
+        </table>
+      </div>
+      <p class="dx-hint" data-i18n="dx.hint">Le signal reste sur place : aucune image ne quitte le boîtier.</p>
+    </div>
+    <div class="dx-toast" role="status" aria-live="polite" data-kind="ok"></div>
   </div>
-  <div class="act-t">
-    <p class="act-k">03</p>
-    <h2 class="act-h" data-i18n="a3.h">Zéro surveillance</h2>
-    <p class="act-p" data-i18n="a3.p">Aucune image enregistrée. Alerte locale bienveillante.</p>
+</div></div></div>
+        <div class="st-neck" aria-hidden="true"></div><div class="st-foot" aria-hidden="true"></div>
+        <div class="desk" aria-hidden="true"></div>
+        <p class="st-tag"><i></i><span data-i18n="st.tag">Poste Chef de Prévention · Réseau local</span></p>
+      </div>
+      <div class="act-t">
+        <p class="act-k">03</p>
+        <h2 class="act-h" data-i18n="a3.h">Zéro surveillance</h2>
+        <p class="act-p" data-i18n="a3.p2">Du boîtier au bureau de prévention, seul un signal anonyme voyage.</p>
+      </div>
+    </div>
   </div>
 </section>
 
 <!-- ACTE 4 · INSPECTION 360° -->
-<section id="boitier" class="act a4" tabindex="0" role="group" aria-label="Modèle 3D interactif du boîtier AEGIS — flèches gauche/droite pour tourner" data-cursor="Glisser">
+<section id="boitier" class="act a4" tabindex="0" role="group" aria-label="Modèle 3D interactif du boîtier AEGIS — flèches gauche/droite pour tourner" data-cursor="↔ 360°">
   <div class="a4-b">
     <div class="a4-row">
       <div>
@@ -200,6 +248,14 @@
         <p class="bc-big" data-i18n="d.use1">Usines &amp; chantiers</p>
         <ul><li data-i18n="cas1.t">Sites industriels &amp; usines</li><li data-i18n="cas2.t">Chantiers de construction</li></ul>
       </div>
+      <div class="bc b-proto rv">
+        <h3 data-i18n="d.proto">Validation terrain · Prototype F.P.Ms</h3>
+        <div class="proto-g">
+          <figure><img src="assets/img/yolo-avec.jpg?v=9" alt="Sortie du prototype : personne avec casque et gants détectés, visage flouté" width="940" height="659" loading="lazy" decoding="async"><figcaption><b data-i18n="pr.1t">Casque et gants reconnus.</b> <span data-i18n="pr.1p">Chaque zone encadrée est un objet détecté, avec son niveau de confiance.</span></figcaption></figure>
+          <figure><img src="assets/img/yolo-sans.jpg?v=9" alt="Sortie du prototype : personne sans casque ni gants, visage flouté" width="940" height="677" loading="lazy" decoding="async"><figcaption><b data-i18n="pr.2t">Pas de casque, pas de gants.</b> <span data-i18n="pr.2p">C'est ce manque qui déclenche le signal sonore ou lumineux, sur place.</span></figcaption></figure>
+        </div>
+        <p class="note" data-i18n="d.proto.n">Captures réelles de notre prototype, sans retouche, sauf le visage, flouté pour cette page.</p>
+      </div>
       <div class="bc b-team rv">
         <h3 data-i18n="d.team">Équipe · F.P.Ms UMONS</h3>
         <p class="bc-big" data-i18n="team.h">Neuf étudiants ingénieurs, une obsession : zéro accident.</p>
@@ -256,6 +312,6 @@
 </footer>
 
 <script src="assets/vendor/lenis.min.js"></script>
-<script type="module" src="assets/js/main.js?v=29"></script>
+<script type="module" src="assets/js/main.js?v=30"></script>
 </body>
 </html>

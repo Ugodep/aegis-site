@@ -1,5 +1,12 @@
 // FR (défaut, lu depuis le HTML) / EN
 const EN = {
+  'cine':'▶ Demo','a3.p2':'From the box to the prevention office, only an anonymous signal travels.','st.tag':'Prevention manager workstation · Local network',
+  'dx.title':'Safety dashboard','dx.online':'37 cameras online · Local network','dx.t1':'Overview','dx.t2':'Prevention report','dx.t3':'Alerts','dx.demo':'Demo data',
+  'dx.k1':'Images stored','dx.k2':'Latency','dx.k3':'Local processing','dx.r1':'Weekly report','dx.r2':'Generated automatically','dx.exp':'Export PDF / CSV',
+  'dx.syn':'Accident-free summary','dx.syn2':'No accident reported over the period. 3 PPE deviations flagged, all anonymous.','dx.zones':'Analysis by zone','dx.types':'Deviation types',
+  'dx.helmet':'Helmet (2)','dx.glv':'Gloves (1)','dx.zcol':'Zone','dx.a1':'Alert','dx.a2':'Voice','dx.a3':'Light','dx.test':'Test signal',
+  'dx.z1':'Industrial building 1','dx.z2':'Industrial building 2','dx.z3':'Industrial building 3','dx.z4':'Industrial building 4','dx.hint':'The signal stays on site: no image leaves the box.',
+  'd.proto':'Field validation · F.P.Ms prototype','d.proto.n':'Real captures from our prototype, unedited except for the face, blurred for this page.',
   'g.off':'Standard camera · No detection','cmp.note':'No local alert triggered: a missing PPE goes unnoticed.',
   'pin.shell':'High-density polymer shell','pin.sink':'CNC aluminium heatsink','pin.pi':'Raspberry Pi 5 · Edge AI',
   'd.sim.cams':'Number of cameras equipped','d.sim.unit':'€3,800 per device','d.sim.inv':'AEGIS investment','d.sim.acc':'One serious accident avoided','d.sim.net':'Estimated net savings','d.sim.pay':'Payback','d.sim.mo':'months',
