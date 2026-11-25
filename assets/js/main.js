@@ -7,8 +7,8 @@ import { RenderPass } from '../vendor/three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from '../vendor/three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from '../vendor/three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from '../vendor/three/addons/postprocessing/ShaderPass.js';
-import { initProof } from './proof.js?v=31';
-import { initI18n, getLang, msg, onLang, fmtNum } from './i18n.js?v=31';
+import { initProof } from './proof.js?v=32';
+import { initI18n, getLang, msg, onLang, fmtNum } from './i18n.js?v=32';
 
 /* ------------------------------------------------------------------ */
 const HIDE_PARTS = ['body69062', 'body935', 'body27961'];   // pièces du CAD masquées (splitter PoE hors position, optique, plaque)
@@ -50,7 +50,7 @@ $$('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
 /* ============================ SCÈNE 3D ============================ */
 const canvas = $('#gl');
 let useBloom = false;
-let renderer, scene, camera, rig, model, beam, halo, dust, beamPts, beamSeed, composer, bloomComposer, ledLight, floorGlow, softLight, scanFan, signal, mixPass;
+let renderer, scene, camera, rig, model, beam, halo, dust, beamPts, beamSeed, composer, bloomComposer, ledLight, floorGlow, softLight, backGlow, mixPass;
 const bloomL = new THREE.Layers(), darkMat = new THREE.MeshBasicMaterial({ color: 0x000000 }), saved = new Map();
 // faisceau optique : position (repère du GLB, mètres), direction, longueur, rayon. Réglé sur la lentille sous la visière.
 // Le modèle est normalisé au chargement (centré en 0,0,0 ; plus grande dimension = NORM mètres) : ces valeurs sont donc relatives
@@ -73,7 +73,7 @@ const EX = {
 const MAT = {
   body12167: { color: 0xcfd4dc, roughness: .34, metalness: .22, clearcoat: .25, clearcoatRoughness: .4, envMapIntensity: .6 },   // coque gris clair satiné
   body31097: { color: 0x16181d, roughness: .42, metalness: .55 },                                                               // châssis + bloc optique, noir graphite anodisé
-  body55189: { color: 0x0d5c3e, roughness: .48, metalness: .1 },                                                                // Raspberry Pi 5 : vert PCB mat
+  body55189: { color: 0x15171b, roughness: .44, metalness: .62, clearcoat: .45, clearcoatRoughness: .32 },                      // Raspberry Pi 5 : noir obsidienne satiné
   body67541: { color: 0xd5dae2, roughness: .22, metalness: .9 },                                                                // radiateur aluminium brossé
   body67406: { color: 0x202228, roughness: .4, metalness: .2, emissive: 0xff5a00, emissiveIntensity: 0 }                        // LED d'état
 };
@@ -164,22 +164,13 @@ function initGL(){
 
   // acte 3 : faisceau optique discret vers la droite, éclairage studio doux, fine impulsion « signal anonyme » vers l'écran
   softLight = new THREE.PointLight(0xdfe8ff, 0, 7, 2); scene.add(softLight);
-  const fanGeo = new THREE.BufferGeometry();
-  fanGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(9), 3));
-  fanGeo.setAttribute('aS', new THREE.BufferAttribute(new Float32Array([0, -1, 1]), 1));
-  fanGeo.setAttribute('aT', new THREE.BufferAttribute(new Float32Array([0, 1, 1]), 1));
-  scanFan = new THREE.Mesh(fanGeo, new THREE.ShaderMaterial({
-    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
-    uniforms: { u: { value: 0 }, uCol: { value: new THREE.Color(0xcfe4ff) } },
-    vertexShader: 'attribute float aS;attribute float aT;varying float vS;varying float vT;void main(){vS=aS;vT=aT;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-    fragmentShader: 'varying float vS;varying float vT;uniform float u;uniform vec3 uCol;void main(){float e=pow(clamp(1.-pow(abs(vS)/max(vT,.001),2.),0.,1.),2.);float a=u*.13*e*pow(1.-vT,1.3)*smoothstep(0.,.05,vT);gl_FragColor=vec4(uCol,a);}'
-  }));
-  scanFan.frustumCulled = false; scanFan.visible = false; scene.add(scanFan);
-  const sc = document.createElement('canvas'); sc.width = sc.height = 64; const sx = sc.getContext('2d');
-  const sg = sx.createRadialGradient(32, 32, 0, 32, 32, 32); sg.addColorStop(0, 'rgba(255,230,200,1)'); sg.addColorStop(.25, 'rgba(255,120,20,.75)'); sg.addColorStop(1, 'rgba(255,90,0,0)');
-  sx.fillStyle = sg; sx.fillRect(0, 0, 64, 64);
-  signal = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
-  signal.visible = false; scene.add(signal);
+  // acte 2 : halo rétro-éclairé doux derrière l'assemblage éclaté
+  const bc = document.createElement('canvas'); bc.width = bc.height = 256; const bx2 = bc.getContext('2d');
+  const bgr = bx2.createRadialGradient(128, 128, 0, 128, 128, 128);
+  bgr.addColorStop(0, 'rgba(150,190,255,.26)'); bgr.addColorStop(.4, 'rgba(90,130,200,.10)'); bgr.addColorStop(1, 'rgba(0,0,0,0)');
+  bx2.fillStyle = bgr; bx2.fillRect(0, 0, 256, 256);
+  backGlow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(bc), transparent: true, depthWrite: false, fog: false }));
+  backGlow.renderOrder = -2; backGlow.visible = false; scene.add(backGlow);
 
   // poussière lumineuse en profondeur
   const N = 650, pos = new Float32Array(N * 3);
@@ -196,7 +187,6 @@ function initGL(){
   if (useBloom){
     bloomL.set(1);
     [parts.body67406, beam, beamPts].forEach(o => o && o.layers.enable(1));
-    scanFan.layers.enable(1);
     bloomComposer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType }));
     bloomComposer.renderToScreen = false;
     bloomComposer.addPass(new RenderPass(scene, camera));
@@ -219,7 +209,7 @@ function initGL(){
 // passe de bloom sélectif : tout ce qui n'est pas sur la couche bloom est rendu en noir (il occulte, mais ne rayonne pas)
 function darken(o){
   if (o.isMesh && !bloomL.test(o.layers)){ saved.set(o, o.material); o.material = darkMat; }
-  else if ((o === dust || o === halo || o === floorGlow || o === signal) && o.visible){ saved.set(o, true); o.visible = false; }
+  else if ((o === dust || o === halo || o === floorGlow || o === backGlow) && o.visible){ saved.set(o, true); o.visible = false; }
 }
 function restore(){
   saved.forEach((v, o) => { if (v === true) o.visible = true; else o.material = v; });
@@ -259,11 +249,11 @@ const KEYS = [
   K('#vision', .45, { lz: .5, px: 1.22, py: -.1, s: 1.85, rx: .22, ry: 4.48, bm: 1, ld: 1 }, { px: 0, py: .78, s: 1.05 }),
   K('#architecture', 0, { xv: .12, px: 1.45, py: -.06, s: 1.4, rx: .34, ry: 3.9, ld: 1 }, { px: 0, py: .8, s: .86 }),
   // Acte 2 : boîtier éclaté dans la moitié droite, texte à gauche
-  K('#architecture', .5, { xv: 1, px: 1.65, py: -.05, s: 1.05, rx: .3, ry: 3.45, ld: 1 }, { px: 0, py: .8, s: .7 }),
-  K('#architecture', .78, { xv: 1, px: 1.65, py: -.05, s: 1.05, rx: .33, ry: 3.28, ld: 1 }, { px: 0, py: .8, s: .7 }),
+  K('#architecture', .5, { xv: 1, px: 1.65, py: -.04, s: 1.0, rx: .52, ry: 3.95, rz: -.05, ld: .25 }, { px: 0, py: .8, s: .68 }),
+  K('#architecture', .78, { xv: 1, px: 1.65, py: -.04, s: 1.0, rx: .5, ry: 3.82, rz: -.035, ld: .25 }, { px: 0, py: .8, s: .68 }),
   // Acte 3 (épinglé) : boîtier entier en haut à gauche, lentille tournée vers la droite (vers l'écran), faisceau rasant sur la grille
-  K('#preuve', 0, { pin: true, ax: true, px: -1.74, py: .76, s: .7, rx: .36, ry: 5.62, ld: 1, gd: 1 }, { px: -.08, py: 1.52, s: .36 }),
-  K('#preuve', 1, { pin: true, ax: true, px: -1.74, py: .76, s: .7, rx: .36, ry: 5.62, ld: 1, gd: 1 }, { px: -.08, py: 1.52, s: .36 }),
+  K('#preuve', 0, { pin: true, ax: true, px: -1.74, py: .76, s: .7, rx: .3, ry: 5.48, ld: 1, gd: 1 }, { px: -.08, py: 1.52, s: .36 }),
+  K('#preuve', 1, { pin: true, ax: true, px: -1.74, py: .76, s: .7, rx: .3, ry: 5.48, ld: 1, gd: 1 }, { px: -.08, py: 1.52, s: .36 }),
   // Acte 4 : au centre de la moitié haute, manipulable à 360°
   K('#boitier', .5, { px: 0, py: .78, s: .95, rx: .6, ry: 3.3 }, { py: 1.0, s: .66 }),
   // le canvas disparaît avant le dossier B2B : le boîtier ne passe jamais derrière le titre
@@ -319,6 +309,15 @@ addEventListener('pointermove', e => { mx = e.clientX / innerWidth - .5; my = e.
 
 const _v = new THREE.Vector3(), _lw = new THREE.Vector3(), _ld = new THREE.Vector3();
 
+let hlPart = null;
+const HL_PARTS = ['body12167', 'body55189', 'body31097'];
+const setHL = (part, el) => { hlPart = part; $$('[data-part].hl').forEach(x => x.classList.remove('hl')); if (part) $$(`.pin[data-part="${part}"], .pill[data-part="${part}"]`).forEach(x => x.classList.add('hl')); };
+$$('.pill[data-part], .pin .pt').forEach(el => {
+  const part = el.dataset.part || el.parentElement.dataset.part;
+  ['pointerenter', 'focus'].forEach(ev => el.addEventListener(ev, () => setHL(part)));
+  ['pointerleave', 'blur'].forEach(ev => el.addEventListener(ev, () => setHL(null)));
+});
+
 const pinEls = $$('.pin').map(el => {
   const pt = (el.dataset.pt || '').split(',').map(Number);
   return { el, part: el.dataset.part, pt: pt.length === 3 ? new THREE.Vector3(...pt) : null, edge: el.dataset.edge === 'left', corners: null };
@@ -329,7 +328,7 @@ function updatePins(vis){
   const leader = innerWidth * .56;
   pinEls.forEach(p => {
     const m = parts[p.part];
-    if (!m || k < .01){ if (p.on){ p.el.style.opacity = 0; p.on = false; } return; }
+    if (!m || k < .01){ if (p.on){ p.el.style.opacity = 0; p.el.classList.remove('live'); p.on = false; } return; }
     p.on = true;
     let x, y;
     if (p.edge){
@@ -344,6 +343,7 @@ function updatePins(vis){
     p.el.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`;
     p.el.style.setProperty('--w', Math.max(28, x - leader).toFixed(0) + 'px');
     p.el.style.opacity = k.toFixed(2);
+    p.el.classList.toggle('live', k > .6);
   });
 }
 
@@ -372,38 +372,64 @@ function stepAnims(dt){
 }
 
 let roll = 0, lastY = 0, locked = false;
-const CALM = new THREE.Color(0xcfe4ff), AMBER = new THREE.Color(0xff7a1a);
 const smooth = t => t * t * (3 - 2 * t);
-// cycle de détection (6,4 s) : faisceau calme, puis bref passage à l'ambre quand un oubli d'EPI est signalé
+// cycle de détection (6,4 s) : flux calme, puis bref passage à l'ambre quand un oubli d'EPI est signalé
 function detection(){
   const c = time % 6.4;
-  return { c, lock: smooth(clamp((c - 3.6) / .6, 0, 1)) * (1 - smooth(clamp((c - 5.1) / .7, 0, 1))) };
+  return { c, lock: smooth(clamp((c - 3.6) / .6, 0, 1)) * (1 - smooth(clamp((c - 5.4) / .7, 0, 1))) };
 }
-function updateScan(s){
-  const on = st.gd > .02;
-  scanFan.visible = on;
-  softLight.intensity = 7 * st.gd;
-  if (!on){ signal.visible = false; locked = false; return; }
+// arc optique fin entre la lentille et le bord gauche du Studio Display, dessiné en 2D (géométrie de l'écran mise en cache)
+const linkCv = $('#a3Link'), linkCtx = linkCv.getContext('2d'), packet = $('#packet');
+let linkOn = false;
+function clearLink(){
+  if (!linkOn) return;
+  linkOn = false; linkCtx.clearRect(0, 0, linkCv.width, linkCv.height); packet.style.opacity = 0;
+}
+function drawLink(y){
   const { c, lock } = detection();
-  const k = clamp(s / .7, .45, 1.2);
-  _lw.set(...BEAM.pos).applyMatrix4(rig.matrixWorld);
-  softLight.position.set(_lw.x - 1.1 * k, _lw.y + 1.2 * k, _lw.z + 1.6);
-  const pa = scanFan.geometry.attributes.position, sway = Math.sin(time * .7) * .025, w = .17 - .05 * lock;
-  pa.setXYZ(0, _lw.x, _lw.y, _lw.z);
-  pa.setXYZ(1, _lw.x + 1.5 * k, _lw.y + (-.1 + sway - w) * k, _lw.z);
-  pa.setXYZ(2, _lw.x + 1.5 * k, _lw.y + (-.1 + sway + w) * k, _lw.z);
-  pa.needsUpdate = true;
-  scanFan.material.uniforms.u.value = st.gd * (.85 + lock * .6);
-  scanFan.material.uniforms.uCol.value.copy(CALM).lerp(AMBER, lock);
-  const q = clamp((c - 4) / 1.25, 0, 1);          // l'impulsion voyage vers la droite, vers le poste de prévention
-  signal.visible = q > 0 && q < 1 && st.gd > .6;
-  if (signal.visible){
-    signal.position.set(_lw.x + smooth(q) * 2.4, _lw.y - .1 * k * q + Math.sin(q * Math.PI) * .12, _lw.z);
-    signal.scale.setScalar(.14 * k); signal.material.opacity = Math.sin(q * Math.PI);
-  }
-  const isLock = st.gd > .85 && c > 4.9 && c < 5.8;   // la notification arrive quand l'impulsion atteint l'écran
+  const isLock = st.gd > .85 && c > 5.15 && c < 5.9;   // la notification arrive quand l'impulsion atteint l'écran
   if (isLock && !locked && proof) proof.pulse();
   locked = isLock;
+  if (isMobile() || st.gd < .05 || !M.st){ clearLink(); return; }
+  linkOn = true;
+  const top3 = M.secTops[3], shift = y < top3 ? top3 - y : Math.min(0, top3 + M.a3Len - y);   // décalage de la section épinglée
+  _v.set(...BEAM.pos).applyMatrix4(rig.matrixWorld).project(camera);
+  const x0 = (_v.x * .5 + .5) * innerWidth, y0 = (-_v.y * .5 + .5) * innerHeight - shift;
+  const g = M.st, sc = 1.15 - .15 * pullQ, ang = (7 - 4 * pullQ) * Math.PI / 180;
+  const x2 = g.l + g.w - g.w * sc * Math.cos(ang) - 3, y2 = g.t - .02 * g.h + (g.mh - g.h) / 2 * sc;
+  const x1 = (x0 + x2) / 2, y1 = Math.min(y0, y2) - 80;
+  const at = t => { const u = 1 - t; return [u * u * x0 + 2 * u * t * x1 + t * t * x2, u * u * y0 + 2 * u * t * y1 + t * t * y2]; };
+  const ctx = linkCtx, dpr = Math.min(devicePixelRatio || 1, 2);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, innerWidth, innerHeight);
+  const a = st.gd * Math.min(1, st.v);
+  const grad = ctx.createLinearGradient(x0, y0, x2, y2);
+  grad.addColorStop(0, 'rgba(41,182,246,.05)'); grad.addColorStop(.5, 'rgba(41,182,246,.6)'); grad.addColorStop(1, 'rgba(41,182,246,.18)');
+  ctx.globalAlpha = a; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(x1, y1, x2, y2);
+  ctx.strokeStyle = grad; ctx.lineWidth = 5; ctx.globalAlpha = a * .22; ctx.stroke();
+  ctx.lineWidth = 1.2; ctx.globalAlpha = a; ctx.stroke();
+  for (let i = 0; i < 22; i++){
+    const t = (i / 22 + time * .16) % 1, [px, py] = at(t);
+    ctx.globalAlpha = a * Math.sin(t * Math.PI) * .9; ctx.fillStyle = '#29B6F6';
+    ctx.beginPath(); ctx.arc(px, py + Math.sin(i * 7.3 + time * 3) * 2.2, i % 4 ? 1.1 : 1.9, 0, 6.2832); ctx.fill();
+  }
+  const q = (c - 3.95) / 1.25;
+  if (q > 0 && q < 1){
+    const e = smooth(q);
+    for (let k = 10; k >= 0; k--){
+      const t = e - k * .012; if (t < 0) continue;
+      const [px, py] = at(t);
+      ctx.globalAlpha = a * (1 - k / 11) * (k ? .5 : 1); ctx.fillStyle = '#FF5A00';
+      ctx.shadowColor = '#FF5A00'; ctx.shadowBlur = k ? 0 : 14;
+      ctx.beginPath(); ctx.arc(px, py, k ? 2.4 - k * .15 : 3.6, 0, 6.2832); ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+  }
+  ctx.globalAlpha = 1;
+  const [mxp, myp] = at(.5), half = g.pw / 2;
+  packet.style.transform = `translate3d(${Math.max(12, Math.min(mxp - half, x2 - g.pw - 14)).toFixed(1)}px,${(Math.max(myp, y0, y2) + 34).toFixed(1)}px,0)`;
+  packet.style.opacity = a.toFixed(2);
+  packet.classList.toggle('amber', lock > .5);
 }
 
 function renderGL(dt, y){
@@ -423,7 +449,7 @@ function renderGL(dt, y){
   const rollT = SNAP || reduced ? 0 : clamp(speed / 2.4, -1, 1) * .11;
   roll += (rollT - roll) * (1 - Math.exp(-dt * 4.2));
   canvas.style.opacity = vis.toFixed(3);
-  if (vis < .01 || !glOK){ updatePins(0); return; }
+  if (vis < .01 || !glOK){ updatePins(0); clearLink(); return; }
 
   const bx = px, by = py + Math.sin(time * 1.1) * .004 * S0 * s;   // respiration ±0,004 m
   rig.position.set(bx, by, st.pz);
@@ -432,7 +458,12 @@ function renderGL(dt, y){
   rig.scale.setScalar(S0 * s);
 
   const ex = st.ex, lf = st.lf;
-  for (const n in parts){ const m = parts[n]; m.position.copy(m.userData.ex).multiplyScalar(ex); m.rotation.x = 0; if (st.xv > .001) m.position.y += st.xv * (XV[n] ?? .025); }
+  for (const n in parts){ const m = parts[n]; m.position.copy(m.userData.ex).multiplyScalar(ex); m.rotation.x = 0; if (st.xv > .001) m.position.y += st.xv * ((XV[n] ?? .025) + Math.sin(time * 1.05 + (n === 'body12167' ? 0 : n === 'body31097' ? 4.2 : 2.1)) * .0022); }
+  HL_PARTS.forEach(n => {   // pièce mise en valeur par le survol d'une annotation ou d'une pilule
+    const m = parts[n]; if (!m) return;
+    m.userData.hl = (m.userData.hl || 0) + (((hlPart === n && st.xv > .3) ? 1 : 0) - (m.userData.hl || 0)) * (1 - Math.exp(-dt * 9));
+    m.material.emissive.setHex(0x2f7ddb); m.material.emissiveIntensity = m.userData.hl * (.34 + .12 * Math.sin(time * 6));
+  });
   const shell = parts.body12167;                      // vue éclatée de la coque seule : montée verticale (+Y) avec léger tilt
   if (shell){ shell.position.y += lf * .1; shell.rotation.x = -lf * .2; }
   if (parts.body31097) parts.body31097.position.y -= lf * .03;   // le châssis descend un peu : les annotations ne se chevauchent plus
@@ -474,13 +505,17 @@ function renderGL(dt, y){
     ledLight.distance = .95 * ls;                                  // portée courte : n'atteint pas le creux supérieur de la coque
   } }
   ledLight.intensity = ledK * (.5 + alarm * 1.8) * (isMobile() ? .5 : 1);
-  updateScan(s);
+  softLight.intensity = 7 * st.gd;
+  if (st.gd > .02){ _lw.set(...BEAM.pos).applyMatrix4(rig.matrixWorld); const k = clamp(s / .7, .45, 1.2); softLight.position.set(_lw.x - 1.1 * k, _lw.y + 1.2 * k, _lw.z + 1.6); }
+  backGlow.visible = st.xv > .02; backGlow.material.opacity = clamp(st.xv, 0, 1);
+  backGlow.position.set(rig.position.x, rig.position.y, rig.position.z - 1.4); backGlow.scale.set(5.6 * s, 3.9 * s, 1);
   camera.lookAt(0, 0, 0);
   camera.rotateZ(roll);
   if (mixPass) mixPass.uniforms.uAb.value = Math.max(0, Math.abs(roll) / .11 - .55) * .016;
   scene.updateMatrixWorld(true);
   if (composer && useBloom) renderBloom(); else renderer.render(scene, camera);
   updatePins(vis);
+  drawLink(y);
 }
 
 /* ============================ UI : état du scroll ============================ */
@@ -493,7 +528,7 @@ let activeSec = -1, shPrev = 0;
 const rail = $('#rail'), railLinks = $$('a', rail);
 const stageEl = $('#boitier'), exBtn = $('#exBtn');
 const depthEls = $$('#depth span'), station = $('#station'), a3Fade = $('#a3Fade');
-let pullPrev = -1, fadePrev = -1, inA4 = false;
+let pullQ = 0, pullPrev = -1, fadePrev = -1, inA4 = false;
 
 // Mesures de layout mises en cache : recalculées au resize / changement de langue, jamais par frame.
 const M = { secTops: [], stageC: 0, doc: 1, a3Len: 1 };
@@ -503,6 +538,10 @@ function measure(){
   const sr = stageEl.getBoundingClientRect(); M.stageC = sr.top + sy + sr.height / 2;
   M.doc = document.documentElement.scrollHeight - innerHeight;
   M.a3Len = Math.max(1, sections[3].offsetHeight - innerHeight);
+  const mon = $('.monitor', station);
+  M.st = { l: station.offsetLeft, t: station.offsetTop, w: station.offsetWidth, h: station.offsetHeight, mh: mon.offsetHeight, pw: $('#packet').offsetWidth || 250 };
+  const cv = $('#a3Link'), dpr = Math.min(devicePixelRatio || 1, 2), W = Math.round(innerWidth * dpr), H = Math.round(innerHeight * dpr);
+  if (cv.width !== W || cv.height !== H){ cv.width = W; cv.height = H; }
   pullPrev = -1;
 }
 let proof = null, cursorTick = null;   // piloté par la boucle rAF unique (voir loop())
@@ -537,10 +576,11 @@ function updateUI(y){
   });
   // acte 3 : l'écran démarre en gros plan, puis la caméra recule et révèle le poste de travail
   const top3 = M.secTops[3], q = smooth(clamp((y - top3) / (M.a3Len * .62), 0, 1));
+  pullQ = q;
   if (Math.abs(q - pullPrev) > .001){
     pullPrev = q;
-    const mob = isMobile(), sc = mob ? 1.07 - .07 * q : 1.18 - .18 * q;
-    station.style.transform = reduced ? 'none' : `perspective(1700px) scale(${sc.toFixed(4)}) rotateY(${mob ? 0 : (-6 * q).toFixed(2)}deg) rotateX(${mob ? 0 : (2 * q).toFixed(2)}deg)`;
+    const mob = isMobile(), sc = mob ? 1.06 - .06 * q : 1.15 - .15 * q;
+    station.style.transform = reduced ? 'none' : `perspective(1700px) scale(${sc.toFixed(4)}) rotateY(${mob ? 0 : (-7 + 4 * q).toFixed(2)}deg) rotateX(${mob ? 0 : (1.5 * q).toFixed(2)}deg)`;
   }
   // le titre et l'écran s'effacent dès que la section quitte l'écran : le boîtier ne traverse jamais le texte
   const fade = 1 - clamp((y - top3 - M.a3Len) / (vh * .26), 0, 1);

@@ -10,7 +10,8 @@ const TXT = {
     sent: (z, m) => `Signal testé · ${z} · ${m}`,
     nosig: z => `${z} · aucun signal configuré`,
     recv: 'Signal anonyme reçu · Zone B · Casque manquant',
-    exp: 'Démo : aucun fichier n’est créé'
+    exp: 'Démo : aucun fichier n’est créé',
+    run: 'En cours', done: 'Clôturée', close: 'Clôturer', reopen: 'Rouvrir'
   },
   en: {
     zones: { A: 'Zone A · Entrance', B: 'Zone B · Workshop', C: 'Zone C · Dock' },
@@ -19,7 +20,8 @@ const TXT = {
     sent: (z, m) => `Signal tested · ${z} · ${m}`,
     nosig: z => `${z} · no signal configured`,
     recv: 'Anonymous signal received · Zone B · Missing helmet',
-    exp: 'Demo: no file is created'
+    exp: 'Demo: no file is created',
+    run: 'In progress', done: 'Closed', close: 'Close', reopen: 'Reopen'
   }
 };
 
@@ -62,6 +64,20 @@ export function initProof({ root, getLang = () => 'fr' }){
     panes.forEach(p => p.classList.toggle('on', p.dataset.pane === name));
   }
 
+  // plan d'actions : clôturer / rouvrir une action (démo, rien n'est enregistré)
+  const rows = $$('.dx-plan tbody tr');
+  function paintPlan(){
+    const L = t(); let done = 0;
+    rows.forEach(r => {
+      const d = r.dataset.done === '1'; done += d;
+      const chip = r.querySelector('.dx-chip');
+      chip.textContent = d ? L.done : L.run; chip.className = 'dx-chip ' + (d ? 'done' : 'run');
+      r.querySelector('.dx-tog').textContent = d ? L.reopen : L.close;
+    });
+    $('#dxOpen').textContent = rows.length - done; $('#dxClosed').textContent = done;
+  }
+  rows.forEach(r => r.querySelector('.dx-tog').addEventListener('click', () => { r.dataset.done = r.dataset.done === '1' ? '0' : '1'; paintPlan(); }));
+
   const activate = (el, fn) => {
     el.addEventListener('click', e => { e.stopPropagation(); fn(); });
     el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fn(); } });
@@ -75,10 +91,10 @@ export function initProof({ root, getLang = () => 'fr' }){
     showToast(() => mode === 'none' ? t().nosig(t().zones[z]) : t().sent(t().zones[z], t().modes[mode]));
   }));
   $('#dxExport').addEventListener('click', () => showToast(() => t().exp));
-  select(cur);
+  select(cur); paintPlan();
 
   return {
-    refresh(){ select(cur); if (lastToast && toast.classList.contains('on')) $('#dxToastTxt').textContent = lastToast(); },
+    refresh(){ select(cur); paintPlan(); if (lastToast && toast.classList.contains('on')) $('#dxToastTxt').textContent = lastToast(); },
     // appelé quand l'impulsion 3D part vers l'écran : le signal anonyme « arrive » sur le poste
     pulse(){
       const p = cams.find(x => x.dataset.cam === 'c2');

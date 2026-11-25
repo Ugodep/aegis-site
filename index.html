@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>AEGIS Pro Tech — L'IA qui protège sans surveiller</title>
-<meta name="description" content="Un boîtier qui se branche sur les caméras déjà installées et détecte les EPI manquants en temps réel, localement, sans stocker aucune image. Projet d'étudiants de la Faculté Polytechnique de Mons (UMONS).">
+<meta name="description" content="Un boîtier qui se branche sur les caméras déjà installées et détecte localement les casques et gilets manquants, sans stocker aucune image. Projet d'étudiants de la Faculté Polytechnique de Mons (UMONS).">
 <meta name="theme-color" content="#000000">
 <meta property="og:title" content="AEGIS Pro Tech — L'IA qui protège sans surveiller">
 <meta property="og:description" content="Détection d'EPI par IA, en local, sans image stockée. Projet de 9 étudiants ingénieurs — UMONS.">
@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js"}}</script>
-<link rel="stylesheet" href="assets/css/style.css?v=31">
+<link rel="stylesheet" href="assets/css/style.css?v=32">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"AEGIS Pro Tech","description":"Détection d'EPI par IA embarquée sur les caméras existantes. Privacy by Design.","parentOrganization":{"@type":"CollegeOrUniversity","name":"Faculté Polytechnique de Mons (UMONS)"}}</script>
 </head>
 <body>
@@ -90,20 +90,22 @@
   <div class="act-t">
     <p class="act-k">02</p>
     <h2 class="act-h" data-i18n="a2.h">Architecture locale</h2>
-    <div class="pills"><span class="pill" data-i18n="a2.1">Raspberry Pi 5</span><span class="pill" data-i18n="a2.2">Validation 10 s anti-faux positifs</span><span class="pill" data-i18n="a2.3">0 octet Cloud</span></div>
+    <div class="pills"><span class="pill" data-part="body55189" tabindex="0" data-i18n="a2.1">Raspberry Pi 5</span><span class="pill" data-part="body31097" tabindex="0" data-i18n="a2.2">Validation 10 s anti-faux positifs</span><span class="pill" data-part="body12167" tabindex="0" data-i18n="a2.3">0 octet Cloud</span></div>
   </div>
 </section>
 
 <div class="pins" id="pins" aria-hidden="true">
-  <div class="pin" data-part="body12167" data-edge="left"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.shell">Coque polymère haute densité</span></div>
-  <div class="pin" data-part="body55189" data-pt="-0.088,-0.004,-0.031"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.sink">Radiateur aluminium CNC</span></div>
-  <div class="pin" data-part="body55189" data-pt="-0.035,-0.012,-0.031"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.pi">Raspberry Pi 5 · Edge AI</span></div>
+  <div class="pin" data-part="body12167" data-edge="left"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.shell">Coque de protection atelier</span></div>
+  <div class="pin" data-part="body55189" data-pt="-0.035,-0.012,-0.031"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.core">Cœur IA · Raspberry Pi 5</span></div>
+  <div class="pin" data-part="body31097" data-pt="0.080,0.000,-0.039"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.opt">Optique &amp; rappel local intégré</span></div>
 </div>
 
 <!-- ACTE 3 · ALERTE & PREUVE -->
 <section id="preuve" class="act a3">
   <div class="a3-pin">
     <div class="a3-fade" id="a3Fade">
+      <canvas id="a3Link" aria-hidden="true"></canvas>
+      <div class="packet" id="packet" aria-hidden="true"><span data-i18n="pk.h">Paquet anonyme en transit</span><code data-i18n="pk.c">{ zone: "B", epi: "Casque", img: 0 }</code></div>
       <div class="station" id="station">
         <div class="st-halo" aria-hidden="true"></div>
         <div class="monitor"><div class="screen"><div class="dx">
@@ -124,38 +126,47 @@
     </div>
 
     <div class="dx-pane on" data-pane="over">
-      <div class="dx-banner"><span class="ok"><i></i><span data-i18n="dx.b1">Aucun accident déclaré</span></span><span class="warn"><i></i><span data-i18n="dx.b2">Rappel actif : Zone B · Atelier</span></span></div>
-      <div class="dx-kpis">
-        <div class="dx-card k1"><small data-i18n="dx.k1">Rappels émis</small><b>2</b></div>
-        <div class="dx-card k2"><small data-i18n="dx.k2">Correction moyenne</small><b>8 s</b></div>
-        <div class="dx-card k3"><small data-i18n="dx.k3">Jours sans accident</small><b>42</b></div>
-      </div>
       <div class="dx-grid">
         <div class="dx-card dx-mapw"><svg class="dx-map" viewBox="0 0 400 220" role="group" aria-label="Plan du site"><rect class="shell" x="6" y="6" width="388" height="208" rx="10"/><g class="dx-z" data-zone="A" data-first="c1" tabindex="0" role="button" aria-label="Zone A · Entrée"><rect x="18" y="18" width="106" height="112" rx="6"/><text x="28" y="120" data-i18n="dx.za">Zone A · Entrée</text></g><g class="dx-z" data-zone="B" data-first="c2" tabindex="0" role="button" aria-label="Zone B · Atelier"><rect x="134" y="18" width="248" height="112" rx="6"/><text x="144" y="120" data-i18n="dx.zb">Zone B · Atelier</text></g><g class="dx-z" data-zone="C" data-first="c4" tabindex="0" role="button" aria-label="Zone C · Quai"><rect x="18" y="142" width="364" height="60" rx="6"/><text x="28" y="192" data-i18n="dx.zc">Zone C · Quai</text></g><path class="wall" d="M71 130v12M258 130v12M124 74h10"/><g class="mach"><rect x="196" y="56" width="44" height="22" rx="3"/><rect x="258" y="56" width="44" height="22" rx="3"/><rect x="226" y="90" width="76" height="14" rx="3"/></g><g class="dx-cam" data-cam="c1" transform="translate(30 30)" tabindex="0" role="button" aria-label="Caméra 1"><path class="cone" d="M0 0 L52 -20 A56 56 0 0 1 52 20 Z" transform="rotate(38)"/><circle class="hit-r" r="6"/><circle class="dot" r="5.500"/><circle r="12" fill="transparent"/></g><g class="dx-cam warn" data-cam="c2" transform="translate(146 30)" tabindex="0" role="button" aria-label="Caméra 2"><path class="cone" d="M0 0 L52 -20 A56 56 0 0 1 52 20 Z" transform="rotate(36)"/><circle class="hit-r" r="6"/><circle class="dot" r="5.500"/><circle r="12" fill="transparent"/></g><g class="dx-cam" data-cam="c3" transform="translate(370 30)" tabindex="0" role="button" aria-label="Caméra 3"><path class="cone" d="M0 0 L52 -20 A56 56 0 0 1 52 20 Z" transform="rotate(142)"/><circle class="hit-r" r="6"/><circle class="dot" r="5.500"/><circle r="12" fill="transparent"/></g><g class="dx-cam" data-cam="c4" transform="translate(370 154)" tabindex="0" role="button" aria-label="Caméra 4"><path class="cone" d="M0 0 L52 -20 A56 56 0 0 1 52 20 Z" transform="rotate(163)"/><circle class="hit-r" r="6"/><circle class="dot" r="5.500"/><circle r="12" fill="transparent"/></g></svg></div>
         <div class="dx-card dx-side" data-alert="1">
           <small id="dxCam">Caméra 02 · En ligne</small>
           <h4 id="dxZone">Zone B · Atelier</h4>
           <p class="iss" id="dxIssue">Rappel actif · Casque manquant</p>
+          <p class="sta"><i></i><span data-i18n="dx.b1">Aucun accident déclaré</span></p>
         </div>
+      </div>
+      <div class="dx-kpis">
+        <div class="dx-card k1"><small data-i18n="dx.k1">Rappels émis</small><b>2</b></div>
+        <div class="dx-card k2"><small data-i18n="dx.k2">Correction moyenne</small><b>8 s</b></div>
+        <div class="dx-card k3"><small data-i18n="dx.k3">Image stockée</small><b>0</b></div>
       </div>
     </div>
 
     <div class="dx-pane" data-pane="report">
       <div class="dx-rhead"><div><h4 data-i18n="dx.r1">Rapport hebdomadaire</h4><small>Réf. AEGIS-HEBDO</small></div><button type="button" id="dxExport" class="dx-btn" data-i18n="dx.exp">Exporter PDF / CSV</button></div>
-      <div class="dx-card dx-synth"><b data-i18n="dx.b1">Aucun accident déclaré</b><span data-i18n="dx.syn2">Les rappels sont anonymes : heure, zone, équipement, durée.</span></div>
+      <div class="dx-two">
+        <div class="dx-card"><h5 data-i18n="dx.zones">Rappels par zone</h5>
+          <ul class="dx-bars"><li><span data-i18n="dx.za">Zone A · Entrée</span><i style="--v:3%"></i><em>0</em></li><li><span data-i18n="dx.zb">Zone B · Atelier</span><i style="--v:100%"></i><em>2</em></li><li><span data-i18n="dx.zc">Zone C · Quai</span><i style="--v:3%"></i><em>0</em></li></ul>
+        </div>
+        <div class="dx-card dx-rate"><h5 data-i18n="dx.norm2">Pour 100 h surveillées</h5><b>—</b><small data-i18n="dx.norm3">Calculé à partir des heures de surveillance enregistrées.</small></div>
+      </div>
       <div class="dx-card">
         <ul class="dx-rows">
           <li><span data-i18n="dx.k1">Rappels émis</span><b>2</b></li>
           <li><span data-i18n="dx.k2">Correction moyenne</span><b>8 s</b></li>
-          <li><span data-i18n="dx.norm">Normalisation</span><b data-i18n="dx.norm2">Pour 100 h surveillées</b></li>
-          <li><span data-i18n="dx.frame">Cadre</span><b data-i18n="dx.frame2">Conforme CCT n° 68 &amp; RGPD</b></li>
+          <li><span data-i18n="dx.frame">Cadre</span><b data-i18n="dx.frame2">Conçu pour la conformité RGPD &amp; CCT n° 68</b></li>
         </ul>
       </div>
     </div>
 
     <div class="dx-pane" data-pane="plan">
-      <div class="dx-card dx-act"><div><h4 data-i18n="dx.ac1">Rappel des règles casque au briefing</h4><small data-i18n="dx.ac1b">Responsable : chef d'équipe</small></div><span class="dx-chip run" data-i18n="dx.run">En cours</span></div>
-      <div class="dx-card dx-act"><div><h4 data-i18n="dx.ac2">Installation rack casques entrée Zone B</h4><small data-i18n="dx.ac2b">Action corrective</small></div><span class="dx-chip done" data-i18n="dx.done">Clôturée</span></div>
+      <div class="dx-card dx-tblw dx-fill">
+        <table class="dx-tbl dx-plan">
+          <thead><tr><th data-i18n="dx.c1">Action</th><th data-i18n="dx.c2">Responsable</th><th data-i18n="dx.c3">Échéance</th><th data-i18n="dx.c4">État</th><th></th></tr></thead>
+          <tbody><tr data-done="0"><th scope="row" data-i18n="dx.ac1">Rappel des règles casque au briefing</th><td data-i18n="dx.who1">Chef d'équipe</td><td data-i18n="dx.due1">Cette semaine</td><td><span class="dx-chip run">En cours</span></td><td><button type="button" class="dx-tog">Clôturer</button></td></tr><tr data-done="1"><th scope="row" data-i18n="dx.ac2">Installation rack casques entrée Zone B</th><td data-i18n="dx.who2">Responsable atelier</td><td data-i18n="dx.due2">Terminée</td><td><span class="dx-chip done">Clôturée</span></td><td><button type="button" class="dx-tog">Rouvrir</button></td></tr><tr data-done="0"><th scope="row" data-i18n="dx.ac3">Vérification du signal local Zone C</th><td data-i18n="dx.who3">Conseiller prévention</td><td data-i18n="dx.due3">Semaine prochaine</td><td><span class="dx-chip run">En cours</span></td><td><button type="button" class="dx-tog">Clôturer</button></td></tr></tbody>
+        </table>
+      </div>
+      <div class="dx-sum"><div class="dx-card"><small data-i18n="dx.open">Actions en cours</small><b id="dxOpen">2</b></div><div class="dx-card"><small data-i18n="dx.closed">Actions clôturées</small><b id="dxClosed">1</b></div></div>
     </div>
 
     <div class="dx-pane" data-pane="alerts">
@@ -164,6 +175,11 @@
           <thead><tr><th data-i18n="dx.zcol">Zone</th><th data-i18n="dx.sig">Signal sur site</th><th></th></tr></thead>
           <tbody><tr data-zone="A"><th scope="row" data-i18n="dx.za">Zone A · Entrée</th><td><select aria-label="Zone A · Entrée"><option value="sound" data-i18n="dx.m.sound">Sonore</option><option value="light" selected data-i18n="dx.m.light">Visuel</option><option value="both" data-i18n="dx.m.both">Sonore et visuel</option><option value="none" data-i18n="dx.m.none">Aucun</option></select></td><td><button type="button" class="dx-test" data-i18n="dx.test">Tester le signal</button></td></tr><tr data-zone="B"><th scope="row" data-i18n="dx.zb">Zone B · Atelier</th><td><select aria-label="Zone B · Atelier"><option value="sound" data-i18n="dx.m.sound">Sonore</option><option value="light" data-i18n="dx.m.light">Visuel</option><option value="both" selected data-i18n="dx.m.both">Sonore et visuel</option><option value="none" data-i18n="dx.m.none">Aucun</option></select></td><td><button type="button" class="dx-test" data-i18n="dx.test">Tester le signal</button></td></tr><tr data-zone="C"><th scope="row" data-i18n="dx.zc">Zone C · Quai</th><td><select aria-label="Zone C · Quai"><option value="sound" selected data-i18n="dx.m.sound">Sonore</option><option value="light" data-i18n="dx.m.light">Visuel</option><option value="both" data-i18n="dx.m.both">Sonore et visuel</option><option value="none" data-i18n="dx.m.none">Aucun</option></select></td><td><button type="button" class="dx-test" data-i18n="dx.test">Tester le signal</button></td></tr></tbody>
         </table>
+      </div>
+      <div class="dx-sum three">
+        <div class="dx-card"><small data-i18n="dx.s1">Règles actives</small><b data-i18n="dx.s1v">3 zones</b></div>
+        <div class="dx-card"><small data-i18n="dx.s2">Mode nuit 22h–06h</small><b data-i18n="dx.s2v">Sans signal sonore</b></div>
+        <div class="dx-card"><small data-i18n="dx.s3">Vidéo transmise</small><b data-i18n="dx.s3v">0 octet</b></div>
       </div>
       <p class="dx-hint" data-i18n="dx.hint">Le signal reste sur place : aucune image ne quitte le boîtier.</p>
     </div>
@@ -238,7 +254,8 @@
       </div>
       <div class="bc b-eth rv">
         <h3 data-i18n="d.eth">Éthique</h3>
-        <p class="bc-big" data-i18n="d.eth1">100 % conforme RGPD</p>
+        <p class="bc-big" data-i18n="d.eth1">Conçu pour la conformité RGPD &amp; CCT n° 68</p>
+        <p class="eth-sub" data-i18n="d.eth2">Aucune donnée nominative</p>
         <div class="flow" aria-label="Flux de données">
           <div class="fn"><b data-i18n="d.p1">Caméra IP</b></div>
           <div class="fl"><i></i></div>
@@ -257,10 +274,10 @@
         <h3 data-i18n="pf.h">Performances mesurées · Pipeline Edge AI</h3>
         <p class="bc-big" data-i18n="pf.s">Banc d'essai sur le jeu public SH17 : 810 images de test.</p>
         <div class="perf-g">
-          <div class="perf-m"><div class="perf-t"><span data-i18n="pf.m1">Précision casque</span><b>93 %</b></div><div class="bar"><i style="--w:93%"></i></div><small data-i18n="pf.n1">0,93 simple · 0,94 TTA (têtes lisibles ≥ 24 px) · rappel 0,91 / 0,92</small></div>
-          <div class="perf-m"><div class="perf-t"><span data-i18n="pf.m2">Précision gilet haute visibilité</span><b>93 %</b></div><div class="bar"><i style="--w:93%"></i></div><small data-i18n="pf.n2">0,93 simple · 0,93 TTA (810 images) · rappel 0,90 / 0,92</small></div>
-          <div class="perf-m"><div class="perf-t"><span data-i18n="pf.m3">Filtrage temporel</span><b>10 s</b></div><div class="bar"><i style="--w:100%"></i></div><small data-i18n="pf.n3">Confirmation continue avant alerte locale</small></div>
-          <div class="perf-m"><div class="perf-t"><span data-i18n="pf.m4">Confidentialité</span><b data-i18n="pf.m4.v">0 image</b></div><div class="bar"><i style="--w:100%"></i></div><small data-i18n="pf.n4">Anonymisation immédiate, aucune donnée nominative</small></div>
+          <div class="pm pm-ring"><div class="ring"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="rb" cx="60" cy="60" r="52"/><circle class="rf" cx="60" cy="60" r="52" transform="rotate(-90 60 60)"/></svg><b>93&nbsp;%</b></div><p data-i18n="pf.m1">Précision casque</p><small data-i18n="pf.n1">0,93 simple · 0,94 TTA (têtes lisibles ≥ 24 px) · rappel 0,91 / 0,92</small></div>
+          <div class="pm pm-ring"><div class="ring"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="rb" cx="60" cy="60" r="52"/><circle class="rf" cx="60" cy="60" r="52" transform="rotate(-90 60 60)"/></svg><b>93&nbsp;%</b></div><p data-i18n="pf.m2">Précision gilet haute visibilité</p><small data-i18n="pf.n2">0,93 simple · 0,93 TTA (810 images) · rappel 0,90 / 0,92</small></div>
+          <div class="pm pm-big"><b>10 s</b><p data-i18n="pf.m3">Confirmation anti-faux positifs</p><small data-i18n="pf.n3">Le problème doit durer avant toute alerte locale</small></div>
+          <div class="pm pm-big"><b data-i18n="pf.m4.v">0 image</b><p data-i18n="pf.m4">Anonymisation immédiate</p><small data-i18n="pf.n4">Aucune donnée nominative</small></div>
         </div>
         <p class="note" data-i18n="pf.note">Mesures hors terrain, vitesse non encore mesurée sur Raspberry Pi. Toutes tailles de têtes confondues, le rappel casque est de 0,75 : les têtes très petites sont souvent manquées. Images SH17 : licence CC BY-NC-SA 4.0.</p>
       </div>
@@ -290,7 +307,7 @@
       <details class="qa" name="faq" open><summary><span data-i18n="q1">Faut-il changer nos caméras ?</span><i></i></summary><p data-i18n="a1">Non. Le boîtier récupère le flux de vos caméras classiques déjà installées. C'est du Plug &amp; Play.</p></details>
       <details class="qa" name="faq"><summary><span data-i18n="q2">Des images sont-elles stockées ?</span><i></i></summary><p data-i18n="a2">Non. Le flux est analysé en direct dans le boîtier. Aucune image n'est stockée ni envoyée dans le cloud.</p></details>
       <details class="qa" name="faq"><summary><span data-i18n="q3">Peut-on identifier ou sanctionner un ouvrier ?</span><i></i></summary><p data-i18n="a3">Non. Il n'y a aucune reconnaissance faciale et les rapports sont 100 % anonymes. AEGIS est un outil statistique, pas disciplinaire.</p></details>
-      <details class="qa" name="faq"><summary><span data-i18n="q4">Quels équipements sont détectés ?</span><i></i></summary><p data-i18n="a4">Casque, lunettes, gants, gilet, harnais… selon vos zones de risque et le calibrage réalisé sur site.</p></details>
+      <details class="qa" name="faq"><summary><span data-i18n="q4">Quels équipements sont détectés ?</span><i></i></summary><p data-i18n="a4">Priorité au casque et au gilet haute visibilité, les deux équipements contrôlés par défaut. L'architecture est extensible à d'autres EPI, à entraîner et valider sur votre site.</p></details>
       <details class="qa" name="faq"><summary><span data-i18n="q5">Comment démarrer ?</span><i></i></summary><p data-i18n="a5">Remplissez le formulaire de contact : nous organisons une démonstration ou un test pilote gratuit d'un mois sur une zone critique de votre site.</p></details>
     </div>
       </div>
@@ -320,6 +337,6 @@
 </footer>
 
 <script src="assets/vendor/lenis.min.js"></script>
-<script type="module" src="assets/js/main.js?v=31"></script>
+<script type="module" src="assets/js/main.js?v=32"></script>
 </body>
 </html>
