@@ -1,8 +1,17 @@
 // FR (défaut, lu depuis le HTML) / EN
 const EN = {
+  'd.p2':'Local box · Anonymisation',
+  'pin.opt':'Optics &amp; local alert',
+  'uc.1t':'Industrial sites &amp; workshops',
+  'uc.1d':'Production lines, maintenance and mechanical hazard areas',
+  'uc.2t':'Temporary or mobile worksites',
+  'uc.2d':'Co-activity, earthworks and lifting areas',
+  'uc.3t':'Logistics &amp; loading docks',
+  'uc.3d':'Vehicle traffic and manoeuvring areas',
+  'uc.4t':'Subcontractor &amp; visitor access',
+  'uc.4d':'Automatic check before entering a regulated area',
   'pin.shell':'Workshop protective shell',
   'pin.core':'AI Core · Raspberry Pi 5',
-  'pin.opt':'Optics & built-in local alert',
   'pk.h':'Anonymous packet in transit',
   'pk.c':'{ zone: "B", ppe: "Helmet", img: 0 }',
   'dx.k3':'Images stored',
@@ -85,7 +94,7 @@ const EN = {
   'd.proto':'Field validation · F.P.Ms prototype','d.proto.n':'Real captures from our prototype, unedited except for the face, blurred for this page.',
   'g.off':'Standard camera · No detection','cmp.note':'No local alert triggered: a missing PPE goes unnoticed.',
   'd.sim.cams':'Number of cameras equipped','d.sim.unit':'€3,800 per device','d.sim.inv':'AEGIS investment','d.sim.acc':'One serious accident avoided','d.sim.net':'Estimated net savings','d.sim.pay':'Payback','d.sim.mo':'months',
-  'd.p1':'IP camera','d.p2':'Local box · 0 ms blurring','d.p3':'Anonymous signal','d.p4':'✕ Cloud blocked',
+  'd.p1':'IP camera','d.p3':'Anonymous signal','d.p4':'✕ Cloud blocked',
   'nav.vision':'Vision','nav.archi':'Architecture','nav.preuve':'Proof','nav.boitier':'The device','nav.dossier':'Business file',
   'a0.k':'AEGIS PRO TECH · EDGE AI','a0.h':'Protect every gesture. Without ever watching.','a0.p':'Embedded artificial intelligence that secures your industrial sites in real time, 100% locally.','a0.b':'Discover the device ↓','a4.hint':'Drag to rotate · 360°','f.msg':'Message',
   'a1.h':'Edge AI Vision',
@@ -205,7 +214,6 @@ export const msg = k => MSG[lang][k];
 export const onLang = fn => subs.push(fn);
 // grands nombres selon la langue : « 128 939 » (FR, espace insécable) / « 128,939 » (EN)
 export const fmtNum = n => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
-
 export function initI18n(){
   const els = [...document.querySelectorAll('[data-i18n]')];
   els.forEach(el => { el.dataset.fr = el.innerHTML; });

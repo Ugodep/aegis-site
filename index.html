@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js"}}</script>
-<link rel="stylesheet" href="assets/css/style.css?v=32">
+<link rel="stylesheet" href="assets/css/style.css?v=33">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"AEGIS Pro Tech","description":"Détection d'EPI par IA embarquée sur les caméras existantes. Privacy by Design.","parentOrganization":{"@type":"CollegeOrUniversity","name":"Faculté Polytechnique de Mons (UMONS)"}}</script>
 </head>
 <body>
@@ -97,7 +97,7 @@
 <div class="pins" id="pins" aria-hidden="true">
   <div class="pin" data-part="body12167" data-edge="left"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.shell">Coque de protection atelier</span></div>
   <div class="pin" data-part="body55189" data-pt="-0.035,-0.012,-0.031"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.core">Cœur IA · Raspberry Pi 5</span></div>
-  <div class="pin" data-part="body31097" data-pt="0.080,0.000,-0.039"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.opt">Optique &amp; rappel local intégré</span></div>
+  <div class="pin" data-part="body31097" data-pt="0.080,0.000,-0.039"><span class="pl"><i></i></span><span class="pt" data-i18n="pin.opt">Optique &amp; signal local</span></div>
 </div>
 
 <!-- ACTE 3 · ALERTE & PREUVE -->
@@ -257,18 +257,24 @@
         <p class="bc-big" data-i18n="d.eth1">Conçu pour la conformité RGPD &amp; CCT n° 68</p>
         <p class="eth-sub" data-i18n="d.eth2">Aucune donnée nominative</p>
         <div class="flow" aria-label="Flux de données">
-          <div class="fn"><b data-i18n="d.p1">Caméra IP</b></div>
+          <div class="fn"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M3 7.500h11v9H3zM14 11l7-3.500v9L14 13"/></svg><b data-i18n="d.p1">Caméra IP</b></div>
           <div class="fl"><i></i></div>
-          <div class="fn core"><b data-i18n="d.p2">Boîtier local · Floutage 0 ms</b><em data-i18n="d.p4">✕ Cloud bloqué</em></div>
+          <div class="fn core"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 3 20 6v6c0 4.500-3.500 7.500-8 9-4.500-1.500-8-4.500-8-9V6zM9 12l2.200 2.200L15.500 10"/></svg><b data-i18n="d.p2">Boîtier local · Anonymisation</b></div>
+          <em class="fx" data-i18n="d.p4">✕ Cloud bloqué</em>
           <div class="fl"><i></i></div>
-          <div class="fn"><b data-i18n="d.p3">Signal anonyme</b></div>
+          <div class="fn"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 12h.010M8.500 15.500a5 5 0 0 1 0-7M15.500 8.500a5 5 0 0 1 0 7M5.600 18.400a9 9 0 0 1 0-12.800M18.400 5.600a9 9 0 0 1 0 12.800"/></svg><b data-i18n="d.p3">Signal anonyme</b></div>
         </div>
         <ul><li data-i18n="p1.t">Aucun stockage d'images</li><li data-i18n="p2.t">Aucune reconnaissance faciale</li><li data-i18n="p3.t">Outil statistique, pas disciplinaire</li></ul>
       </div>
       <div class="bc b-use rv">
         <h3 data-i18n="d.use">Cas d'usage</h3>
         <p class="bc-big" data-i18n="d.use1">Usines &amp; chantiers</p>
-        <ul><li data-i18n="cas1.t">Sites industriels &amp; usines</li><li data-i18n="cas2.t">Chantiers de construction</li></ul>
+        <ul class="uses">
+          <li><b data-i18n="uc.1t">Sites industriels &amp; ateliers</b><span data-i18n="uc.1d">Lignes de production, maintenance et zones à risque mécanique</span></li>
+          <li><b data-i18n="uc.2t">Chantiers temporaires ou mobiles</b><span data-i18n="uc.2d">Coactivité, terrassement et zones de levage</span></li>
+          <li><b data-i18n="uc.3t">Logistique &amp; quais de chargement</b><span data-i18n="uc.3d">Circulation d'engins et zones de manœuvre</span></li>
+          <li><b data-i18n="uc.4t">Accès sous-traitants &amp; visiteurs</b><span data-i18n="uc.4d">Vérification automatique avant entrée en zone réglementée</span></li>
+        </ul>
       </div>
       <div class="bc b-perf rv">
         <h3 data-i18n="pf.h">Performances mesurées · Pipeline Edge AI</h3>
