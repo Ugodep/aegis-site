@@ -7,8 +7,8 @@ import { RenderPass } from '../vendor/three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from '../vendor/three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from '../vendor/three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from '../vendor/three/addons/postprocessing/ShaderPass.js';
-import { initProof } from './proof.js?v=30';
-import { initI18n, getLang, msg, onLang, fmtNum } from './i18n.js?v=30';
+import { initProof } from './proof.js?v=31';
+import { initI18n, getLang, msg, onLang, fmtNum } from './i18n.js?v=31';
 
 /* ------------------------------------------------------------------ */
 const HIDE_PARTS = ['body69062', 'body935', 'body27961'];   // pièces du CAD masquées (splitter PoE hors position, optique, plaque)
@@ -50,14 +50,14 @@ $$('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
 /* ============================ SCÈNE 3D ============================ */
 const canvas = $('#gl');
 let useBloom = false;
-let renderer, scene, camera, rig, model, beam, halo, dust, beamPts, beamSeed, composer, bloomComposer, ledLight, floorGlow, floorGrid, scanFan, signal, mixPass;
+let renderer, scene, camera, rig, model, beam, halo, dust, beamPts, beamSeed, composer, bloomComposer, ledLight, floorGlow, softLight, scanFan, signal, mixPass;
 const bloomL = new THREE.Layers(), darkMat = new THREE.MeshBasicMaterial({ color: 0x000000 }), saved = new Map();
 // faisceau optique : position (repère du GLB, mètres), direction, longueur, rayon. Réglé sur la lentille sous la visière.
 // Le modèle est normalisé au chargement (centré en 0,0,0 ; plus grande dimension = NORM mètres) : ces valeurs sont donc relatives
 // au centre de l'objet. Si le futur boitier.glb a l'optique ailleurs, il suffit d'ajuster BEAM.pos / BEAM.dir.
 const NORM = .225;
-// éclaté vertical de l'acte 2 (m) : coque +0,085 · carte Pi 5 + radiateur +0,025 · châssis -0,035
-const XV = { body12167: .085, body31097: -.035 };
+// éclaté vertical de l'acte 2 (m) : coque +0,068 · carte Pi 5 + radiateur +0,025 · châssis -0,035
+const XV = { body12167: .068, body31097: -.035 };
 const ENV_I = .45;   // intensité de l'environnement studio (RoomEnvironment + PMREM) : reflets métalliques sur radiateur, chanfreins, châssis
 const BEAM = { pos: [.098, .0035, 0], dir: [1, -.06, 0], len: .12, r: .034 };
 const parts = {};
@@ -162,23 +162,17 @@ function initGL(){
   beamPts = new THREE.Points(bg, new THREE.PointsMaterial({ color: 0xffb27a, size: .015, transparent: true, opacity: .5, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
   beamPts.frustumCulled = false; beam.add(beamPts);
 
-  // acte 3 : grille de détection discrète au sol, faisceau rasant issu de la lentille, impulsion « signal anonyme »
-  floorGrid = new THREE.Mesh(new THREE.PlaneGeometry(2.7, 1.5), new THREE.ShaderMaterial({
-    transparent: true, depthWrite: false,
-    uniforms: { u: { value: 0 }, uScan: { value: .5 }, uCol: { value: new THREE.Color(0x22d3ee) } },
-    vertexShader: 'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-    fragmentShader: 'varying vec2 vUv;uniform float u;uniform float uScan;uniform vec3 uCol;void main(){vec2 g=abs(fract(vUv*vec2(18.,10.))-.5);float line=smoothstep(.44,.5,max(g.x,g.y));float fade=1.-smoothstep(.18,.5,length(vUv-.5));float scan=exp(-pow((vUv.x-uScan)*9.,2.));float a=u*fade*(line*(.2+.65*scan)+.07*scan);gl_FragColor=vec4(uCol,a);}'
-  }));
-  floorGrid.rotation.x = -1.2; floorGrid.visible = false; scene.add(floorGrid);
+  // acte 3 : faisceau optique discret vers la droite, éclairage studio doux, fine impulsion « signal anonyme » vers l'écran
+  softLight = new THREE.PointLight(0xdfe8ff, 0, 7, 2); scene.add(softLight);
   const fanGeo = new THREE.BufferGeometry();
   fanGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(9), 3));
   fanGeo.setAttribute('aS', new THREE.BufferAttribute(new Float32Array([0, -1, 1]), 1));
   fanGeo.setAttribute('aT', new THREE.BufferAttribute(new Float32Array([0, 1, 1]), 1));
   scanFan = new THREE.Mesh(fanGeo, new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
-    uniforms: { u: { value: 0 }, uCol: { value: new THREE.Color(0x22d3ee) } },
+    uniforms: { u: { value: 0 }, uCol: { value: new THREE.Color(0xcfe4ff) } },
     vertexShader: 'attribute float aS;attribute float aT;varying float vS;varying float vT;void main(){vS=aS;vT=aT;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-    fragmentShader: 'varying float vS;varying float vT;uniform float u;uniform vec3 uCol;void main(){float e=clamp(1.-pow(abs(vS)/max(vT,.001),2.),0.,1.);float a=u*.26*e*(1.-.55*vT)*smoothstep(0.,.06,vT);gl_FragColor=vec4(uCol,a);}'
+    fragmentShader: 'varying float vS;varying float vT;uniform float u;uniform vec3 uCol;void main(){float e=pow(clamp(1.-pow(abs(vS)/max(vT,.001),2.),0.,1.),2.);float a=u*.13*e*pow(1.-vT,1.3)*smoothstep(0.,.05,vT);gl_FragColor=vec4(uCol,a);}'
   }));
   scanFan.frustumCulled = false; scanFan.visible = false; scene.add(scanFan);
   const sc = document.createElement('canvas'); sc.width = sc.height = 64; const sx = sc.getContext('2d');
@@ -225,7 +219,7 @@ function initGL(){
 // passe de bloom sélectif : tout ce qui n'est pas sur la couche bloom est rendu en noir (il occulte, mais ne rayonne pas)
 function darken(o){
   if (o.isMesh && !bloomL.test(o.layers)){ saved.set(o, o.material); o.material = darkMat; }
-  else if ((o === dust || o === halo || o === floorGlow || o === floorGrid || o === signal) && o.visible){ saved.set(o, true); o.visible = false; }
+  else if ((o === dust || o === halo || o === floorGlow || o === signal) && o.visible){ saved.set(o, true); o.visible = false; }
 }
 function restore(){
   saved.forEach((v, o) => { if (v === true) o.visible = true; else o.material = v; });
@@ -260,14 +254,13 @@ const K = (sec, f, o = {}, mob = {}) => ({ sec, f, ...BASE, ...o, mob });
 const KEYS = [
   // Acte 0 : texte en haut, boîtier 3/4 dans la moitié basse
   K('#hero', .5, { py: -1.0, s: 1.0, rx: .42, ry: 3.78, ld: 1 }, { py: -.95, s: .66 }),
-  // Acte 1 : plan rasant le long de la visière et de la lentille (boîtier à droite), puis glissement vers l'ouverture
-  K('#vision', 0, { px: 1.15, py: -.3, s: 1.2, rx: .35, ry: 4.1, bm: 1, ld: 1 }, { px: 0, py: .7, s: .75 }),
-  K('#vision', .25, { px: .9, py: -.1, s: 1.3, rx: .3, ry: 4.25, bm: 1, ld: 1 }, { px: 0, py: .7, s: .75 }),
-  K('#vision', .55, { lz: .85, px: 1.1, py: -.1, s: 2.8, rx: .1, ry: 4.6, bm: 1, ld: 1 }, { px: 0, py: .8, s: 1.5 }),
-  K('#vision', .85, { fh: 1, px: 1.2, py: 0, s: 2.4, rx: .75, ry: 3.6, ld: 1 }, { px: 0, py: .8, s: 1.2 }),
+  // Acte 1 : approche continue de l'optique (boîtier à droite), sans palier, qui enchaîne sur l'ouverture
+  K('#vision', .02, { px: 1.15, py: -.28, s: 1.2, rx: .36, ry: 4.1, bm: 1, ld: 1 }, { px: 0, py: .7, s: .74 }),
+  K('#vision', .45, { lz: .5, px: 1.22, py: -.1, s: 1.85, rx: .22, ry: 4.48, bm: 1, ld: 1 }, { px: 0, py: .78, s: 1.05 }),
+  K('#architecture', 0, { xv: .12, px: 1.45, py: -.06, s: 1.4, rx: .34, ry: 3.9, ld: 1 }, { px: 0, py: .8, s: .86 }),
   // Acte 2 : boîtier éclaté dans la moitié droite, texte à gauche
   K('#architecture', .5, { xv: 1, px: 1.65, py: -.05, s: 1.05, rx: .3, ry: 3.45, ld: 1 }, { px: 0, py: .8, s: .7 }),
-  K('#architecture', .78, { xv: 1, px: 1.65, py: -.05, s: 1.05, rx: .34, ry: 3.2, ld: 1 }, { px: 0, py: .8, s: .7 }),
+  K('#architecture', .78, { xv: 1, px: 1.65, py: -.05, s: 1.05, rx: .33, ry: 3.28, ld: 1 }, { px: 0, py: .8, s: .7 }),
   // Acte 3 (épinglé) : boîtier entier en haut à gauche, lentille tournée vers la droite (vers l'écran), faisceau rasant sur la grille
   K('#preuve', 0, { pin: true, ax: true, px: -1.74, py: .76, s: .7, rx: .36, ry: 5.62, ld: 1, gd: 1 }, { px: -.08, py: 1.52, s: .36 }),
   K('#preuve', 1, { pin: true, ax: true, px: -1.74, py: .76, s: .7, rx: .36, ry: 5.62, ld: 1, gd: 1 }, { px: -.08, py: 1.52, s: .36 }),
@@ -288,6 +281,26 @@ function computeAnchors(){
     if (k.ax && !isMobile()){ const a = innerWidth / vh / 1.6; o.px *= clamp(a, .74, 1.2); o.s *= clamp(a, .78, 1.08); }
     return o;
   }).filter(Boolean).sort((a, b) => a.y - b.y);
+  computeSlopes();
+}
+// Spline cubique monotone (Fritsch-Carlson) : vitesse continue d'une clé à l'autre, sans dépassement.
+// La caméra ne s'arrête que sur les vrais paliers (deux clés identiques) et aux changements de sens.
+function hermite(y0, y1, v0, v1, m0, m1, y){
+  const d = y1 - y0 || 1, t = clamp((y - y0) / d, 0, 1), t2 = t * t, t3 = t2 * t;
+  return (2 * t3 - 3 * t2 + 1) * v0 + (t3 - 2 * t2 + t) * d * m0 + (-2 * t3 + 3 * t2) * v1 + (t3 - t2) * d * m1;
+}
+function slope(x0, x1, x2, v0, v1, v2){
+  const h0 = x1 - x0 || 1, h1 = x2 - x1 || 1, d0 = (v1 - v0) / h0, d1 = (v2 - v1) / h1;
+  if (d0 * d1 <= 0) return 0;
+  const w0 = 2 * h1 + h0, w1 = h1 + 2 * h0;
+  return (w0 + w1) / (w0 / d0 + w1 / d1);
+}
+function computeSlopes(){
+  anchors.forEach((a, i) => {
+    a.m = {};
+    const p0 = anchors[i - 1], p2 = anchors[i + 1];
+    PROPS.forEach(p => { a.m[p] = p0 && p2 ? slope(p0.y, a.y, p2.y, p0[p], a[p], p2[p]) : 0; });
+  });
 }
 function targetAt(y, out){
   const A = anchors, n = A.length;
@@ -296,8 +309,7 @@ function targetAt(y, out){
   if (y >= A[n - 1].y) { PROPS.forEach(p => out[p] = A[n - 1][p]); return; }
   let i = 0; while (i < n - 2 && y > A[i + 1].y) i++;
   const a = A[i], b = A[i + 1];
-  let t = clamp((y - a.y) / (b.y - a.y || 1), 0, 1); t = t * t * (3 - 2 * t);
-  PROPS.forEach(p => out[p] = a[p] + (b[p] - a[p]) * t);
+  PROPS.forEach(p => out[p] = hermite(a.y, b.y, a[p], b[p], a.m[p], b.m[p], y));
 }
 
 const st = { ...BASE, s: .3, v: 0, ry: -2.4, rx: .9 };
@@ -360,41 +372,38 @@ function stepAnims(dt){
 }
 
 let roll = 0, lastY = 0, locked = false;
-const CYAN = new THREE.Color(0x22d3ee), AMBER = new THREE.Color(0xff5a00), _t = new THREE.Vector3();
+const CALM = new THREE.Color(0xcfe4ff), AMBER = new THREE.Color(0xff7a1a);
 const smooth = t => t * t * (3 - 2 * t);
-// cycle de détection (6,4 s) : balayage cyan calme, puis verrouillage ambre bref quand un oubli d'EPI est détecté
+// cycle de détection (6,4 s) : faisceau calme, puis bref passage à l'ambre quand un oubli d'EPI est signalé
 function detection(){
   const c = time % 6.4;
-  return { c, lock: smooth(clamp((c - 3.8) / .25, 0, 1)) * (1 - smooth(clamp((c - 5.2) / .4, 0, 1))) };
+  return { c, lock: smooth(clamp((c - 3.6) / .6, 0, 1)) * (1 - smooth(clamp((c - 5.1) / .7, 0, 1))) };
 }
 function updateScan(s){
   const on = st.gd > .02;
-  floorGrid.visible = scanFan.visible = on;
-  if (!on){ signal.visible = false; locked = false; return 0; }
+  scanFan.visible = on;
+  softLight.intensity = 7 * st.gd;
+  if (!on){ signal.visible = false; locked = false; return; }
   const { c, lock } = detection();
   const k = clamp(s / .7, .45, 1.2);
   _lw.set(...BEAM.pos).applyMatrix4(rig.matrixWorld);
-  floorGrid.position.set(_lw.x - .28 * k, _lw.y - .5 * k, _lw.z + .15);
-  floorGrid.scale.setScalar(k);
-  floorGrid.updateMatrixWorld(true);
-  const sweep = Math.sin(time * 1.25) * .62 * (1 - lock) + .22 * lock;   // oscille, puis se fige sur la cible
-  floorGrid.material.uniforms.u.value = st.gd; floorGrid.material.uniforms.uScan.value = .5 + sweep * .42;
-  floorGrid.material.uniforms.uCol.value.copy(CYAN).lerp(AMBER, lock);
-  const pa = scanFan.geometry.attributes.position, w = .22 - .1 * lock;
+  softLight.position.set(_lw.x - 1.1 * k, _lw.y + 1.2 * k, _lw.z + 1.6);
+  const pa = scanFan.geometry.attributes.position, sway = Math.sin(time * .7) * .025, w = .17 - .05 * lock;
   pa.setXYZ(0, _lw.x, _lw.y, _lw.z);
-  [[1, sweep - w], [2, sweep + w]].forEach(([i, u]) => { _t.set(u * 1.1, -.08, 0); floorGrid.localToWorld(_t); pa.setXYZ(i, _t.x, _t.y, _t.z); });
+  pa.setXYZ(1, _lw.x + 1.5 * k, _lw.y + (-.1 + sway - w) * k, _lw.z);
+  pa.setXYZ(2, _lw.x + 1.5 * k, _lw.y + (-.1 + sway + w) * k, _lw.z);
   pa.needsUpdate = true;
-  scanFan.material.uniforms.u.value = st.gd * (.8 + lock * .7); scanFan.material.uniforms.uCol.value.copy(floorGrid.material.uniforms.uCol.value);
-  const q = clamp((c - 4.05) / 1.05, 0, 1);      // l'impulsion s'échappe vers la droite, vers le poste de prévention
+  scanFan.material.uniforms.u.value = st.gd * (.85 + lock * .6);
+  scanFan.material.uniforms.uCol.value.copy(CALM).lerp(AMBER, lock);
+  const q = clamp((c - 4) / 1.25, 0, 1);          // l'impulsion voyage vers la droite, vers le poste de prévention
   signal.visible = q > 0 && q < 1 && st.gd > .6;
   if (signal.visible){
-    signal.position.set(_lw.x + q * q * 2.4, _lw.y + Math.sin(q * Math.PI) * .16, _lw.z);
-    signal.scale.setScalar(.2 * k); signal.material.opacity = Math.sin(q * Math.PI);
+    signal.position.set(_lw.x + smooth(q) * 2.4, _lw.y - .1 * k * q + Math.sin(q * Math.PI) * .12, _lw.z);
+    signal.scale.setScalar(.14 * k); signal.material.opacity = Math.sin(q * Math.PI);
   }
-  const isLock = st.gd > .85 && c > 4.05 && c < 5.2;
+  const isLock = st.gd > .85 && c > 4.9 && c < 5.8;   // la notification arrive quand l'impulsion atteint l'écran
   if (isLock && !locked && proof) proof.pulse();
   locked = isLock;
-  return lock * st.gd;
 }
 
 function renderGL(dt, y){
@@ -484,7 +493,7 @@ let activeSec = -1, shPrev = 0;
 const rail = $('#rail'), railLinks = $$('a', rail);
 const stageEl = $('#boitier'), exBtn = $('#exBtn');
 const depthEls = $$('#depth span'), station = $('#station'), a3Fade = $('#a3Fade');
-let pullPrev = -1, fadePrev = -1;
+let pullPrev = -1, fadePrev = -1, inA4 = false;
 
 // Mesures de layout mises en cache : recalculées au resize / changement de langue, jamais par frame.
 const M = { secTops: [], stageC: 0, doc: 1, a3Len: 1 };
@@ -512,9 +521,17 @@ function updateUI(y){
     rail.classList.toggle('off', a >= 5);
   }
   stageW = clamp(1 - Math.abs((M.stageC - y) - vh / 2) / (vh * .55), 0, 1);
+  const on4 = y > M.secTops[4] - vh * .4 && y < M.secTops[4] + vh * .16;
+  if (on4 !== inA4 || !stageEl.dataset.ready){
+    inA4 = on4; stageEl.dataset.ready = '1'; stageEl.classList.toggle('out', !on4);
+    if (!on4){   // le défilement seul ne déclenche pas pointermove : on réinitialise le curseur ici
+      const c = $('#cur'); if (c.classList.contains('deg')){ c.classList.remove('on', 'deg'); $('#curT').textContent = ''; }
+      dragging = false;
+    }
+  }
   // mots géants derrière le boîtier : parallaxe horizontale
   depthEls.forEach(el => {
-    const i = +el.dataset.a, on = i === a;
+    const i = +el.dataset.a, on = i === a && a !== 3;
     el.classList.toggle('on', on);
     if (on){ const f = clamp((y - M.secTops[i]) / (i === 3 ? M.a3Len : vh), -.6, 1.2); el.style.setProperty('--dx', ((.3 - f) * innerWidth * .22).toFixed(1) + 'px'); }
   });
@@ -675,14 +692,16 @@ let cineTick = null;
   let run = null;
   const go = y => { if (lenis) lenis.scrollTo(y, { immediate: true, force: true }); else window.scrollTo(0, y); };
   const stop = () => { run = null; btn.classList.remove('on'); };
-  const ease5 = t => t * t * t * (t * (t * 6 - 15) + 10);
   btn.addEventListener('click', () => {
     if (run) return stop();
     document.body.classList.remove('menu'); lenis && lenis.start();
     measure(); computeAnchors();
-    const T = M.secTops;
-    // [destination, durée (s), pause initiale]
-    run = { t: 0, i: 0, from: 0, legs: [[T[1], 3.8, .9], [T[2], 4.2, .8], [T[3] + M.a3Len * .74, 6, .9], [T[4], 4, .7]] };
+    const T = M.secTops, vh = innerHeight, d = vh * .07;
+    // [temps (s), position] : autour de chaque acte le défilement ralentit sans jamais s'arrêter
+    const k = [[0, 0], [1, d], [3.6, T[1] - d], [5, T[1] + d], [7.2, T[2] - d], [8.8, T[2] + d],
+      [11, T[3] + M.a3Len * .3], [14.2, T[3] + M.a3Len * .74], [15.4, T[3] + M.a3Len * .9], [18, T[4]]];
+    const m = k.map((p, i) => i && i < k.length - 1 ? slope(k[i - 1][0], p[0], k[i + 1][0], k[i - 1][1], p[1], k[i + 1][1]) : 0);
+    run = { t: 0, k, m };
     btn.classList.add('on'); go(0);
   });
   ['wheel', 'touchstart', 'pointerdown', 'keydown'].forEach(ev => addEventListener(ev, e => {
@@ -690,10 +709,11 @@ let cineTick = null;
   }, { passive: true, capture: true }));
   cineTick = dt => {
     if (!run) return;
-    const [to, dur, hold] = run.legs[run.i];
     run.t += dt;
-    go(run.from + (to - run.from) * ease5(clamp((run.t - hold) / (dur - hold), 0, 1)));
-    if (run.t >= dur){ run.from = to; run.t = 0; if (++run.i >= run.legs.length) stop(); }
+    const { k, m } = run, end = k[k.length - 1];
+    if (run.t >= end[0]){ go(end[1]); return stop(); }
+    let i = 0; while (i < k.length - 2 && run.t > k[i + 1][0]) i++;
+    go(hermite(k[i][0], k[i + 1][0], k[i][1], k[i + 1][1], m[i], m[i + 1], run.t));
   };
 }
 
@@ -708,7 +728,8 @@ if (matchMedia('(hover:hover) and (pointer:fine)').matches && !reduced){
     const t = e.target, q = s => t.closest && t.closest(s);
     const inp = q('input,textarea'), dc = q('[data-cursor]'), link = q('a,button,summary,label');
     cur.classList.toggle('bar', !!inp);
-    const label = !inp && dc ? dc.dataset.cursor : '';
+    let label = !inp && dc ? dc.dataset.cursor : '';
+    if (label === '↔ 360°' && !inA4) label = '';
     lab.textContent = label ? (getLang() === 'en' && EN[label] ? EN[label] : label) : '';
     cur.classList.toggle('on', !!label);
     cur.classList.toggle('deg', label === '↔ 360°');

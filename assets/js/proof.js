@@ -1,58 +1,60 @@
 // Tableau de bord AEGIS interactif (écran du chef de prévention, Acte 3).
-// Reprend les codes visuels de l'application (barre latérale cyan, cartes à liseré, graphiques en anneau).
-// Toutes les valeurs affichées sont des DONNÉES DE DÉMONSTRATION, signalées comme telles à l'écran.
-// Les textes fixes sont dans index.html (data-i18n) ; ici uniquement les textes dynamiques.
+// Reprend les rubriques de l'application « AEGIS Prévention » (dashboard-local). Les valeurs affichées sont des
+// DONNÉES DE DÉMONSTRATION, signalées comme telles à l'écran. Les textes fixes sont dans index.html (data-i18n).
 
 const TXT = {
   fr: {
-    zone: 'Zone', bld: 'Bâtiment industriel', missing: 'Casque manquant', gloves: 'Gants manquants', clear: 'Aucun écart détecté',
-    on: 'Signal local activé', idle: 'Surveillance active', cam: 'Caméra',
-    sent: n => `Signal envoyé : Bâtiment industriel ${n} · 0 image transmise`,
+    zones: { A: 'Zone A · Entrée', B: 'Zone B · Atelier', C: 'Zone C · Quai' },
+    cam: 'Caméra', online: 'En ligne', recall: 'Rappel actif · Casque manquant', clear: 'Aucun rappel actif',
+    modes: { sound: 'Sonore', light: 'Visuel', both: 'Sonore et visuel', none: 'Aucun' },
+    sent: (z, m) => `Signal testé · ${z} · ${m}`,
+    nosig: z => `${z} · aucun signal configuré`,
     recv: 'Signal anonyme reçu · Zone B · Casque manquant',
-    exp: 'Export simulé : aucun fichier n’est créé dans cette démo'
+    exp: 'Démo : aucun fichier n’est créé'
   },
   en: {
-    zone: 'Zone', bld: 'Industrial building', missing: 'Missing helmet', gloves: 'Missing gloves', clear: 'No deviation detected',
-    on: 'Local signal on', idle: 'Monitoring active', cam: 'Camera',
-    sent: n => `Signal sent: Industrial building ${n} · 0 images transmitted`,
+    zones: { A: 'Zone A · Entrance', B: 'Zone B · Workshop', C: 'Zone C · Dock' },
+    cam: 'Camera', online: 'Online', recall: 'Active reminder · Missing helmet', clear: 'No active reminder',
+    modes: { sound: 'Sound', light: 'Visual', both: 'Sound and visual', none: 'None' },
+    sent: (z, m) => `Signal tested · ${z} · ${m}`,
+    nosig: z => `${z} · no signal configured`,
     recv: 'Anonymous signal received · Zone B · Missing helmet',
-    exp: 'Simulated export: no file is created in this demo'
+    exp: 'Demo: no file is created'
   }
 };
 
-// caméras cliquables du plan : zone, bâtiment, état
+// 4 caméras réparties sur 3 zones
 const CAMS = {
-  c1: { zone: 'B', bld: 1, issue: 'missing' },
-  c2: { zone: 'A', bld: 2, issue: null },
-  c3: { zone: 'C', bld: 3, issue: 'gloves' },
-  c4: { zone: 'D', bld: 4, issue: null },
-  c5: { zone: 'A', bld: 5, issue: null }
+  c1: { zone: 'A', n: 1, recall: false },
+  c2: { zone: 'B', n: 2, recall: true },
+  c3: { zone: 'B', n: 3, recall: false },
+  c4: { zone: 'C', n: 4, recall: false }
 };
 
 export function initProof({ root, getLang = () => 'fr' }){
   const $ = s => root.querySelector(s), $$ = s => [...root.querySelectorAll(s)];
   const t = () => TXT[getLang()] || TXT.fr;
-  const toast = $('.dx-toast'), pins = $$('.dx-cam'), tabs = $$('.dx-tabs button'), panes = $$('.dx-pane');
-  let cur = 'c1', toastTimer = 0, lastToast = null;
+  const toast = $('.dx-toast'), cams = $$('.dx-cam'), zones = $$('.dx-z'), tabs = $$('.dx-tabs button'), panes = $$('.dx-pane');
+  let cur = 'c2', toastTimer = 0, lastToast = null;
 
   function showToast(fn, kind = 'ok'){
     lastToast = fn;
-    toast.textContent = fn();
+    $('#dxToastTxt').textContent = fn();
     toast.dataset.kind = kind;
     toast.classList.add('on');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('on'), 3400);
+    toastTimer = setTimeout(() => toast.classList.remove('on'), 3200);
   }
 
   function select(id){
     cur = id;
     const c = CAMS[id], L = t();
-    pins.forEach(p => p.classList.toggle('sel', p.dataset.cam === id));
-    $('#dxZone').textContent = `${L.zone} ${c.zone} · ${L.bld} ${c.bld}`;
-    $('#dxIssue').textContent = c.issue ? L[c.issue] : L.clear;
-    $('#dxState').textContent = c.issue ? L.on : L.idle;
-    $('#dxCam').textContent = `${L.cam} ${String(c.bld).padStart(2, '0')}`;
-    $('.dx-side').dataset.alert = c.issue ? '1' : '0';
+    cams.forEach(p => p.classList.toggle('sel', p.dataset.cam === id));
+    zones.forEach(z => z.classList.toggle('sel', z.dataset.zone === c.zone));
+    $('#dxCam').textContent = `${L.cam} ${String(c.n).padStart(2, '0')} · ${L.online}`;
+    $('#dxZone').textContent = L.zones[c.zone];
+    $('#dxIssue').textContent = c.recall ? L.recall : L.clear;
+    $('.dx-side').dataset.alert = c.recall ? '1' : '0';
   }
 
   function tab(name){
@@ -60,28 +62,26 @@ export function initProof({ root, getLang = () => 'fr' }){
     panes.forEach(p => p.classList.toggle('on', p.dataset.pane === name));
   }
 
+  const activate = (el, fn) => {
+    el.addEventListener('click', e => { e.stopPropagation(); fn(); });
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fn(); } });
+  };
   tabs.forEach(b => b.addEventListener('click', () => tab(b.dataset.tab)));
-  pins.forEach(p => {
-    p.addEventListener('click', () => select(p.dataset.cam));
-    p.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); select(p.dataset.cam); } });
-  });
+  cams.forEach(p => activate(p, () => select(p.dataset.cam)));
+  zones.forEach(z => activate(z, () => select(z.dataset.first)));
   $$('.dx-test').forEach(b => b.addEventListener('click', () => {
-    const n = b.dataset.bld, row = b.closest('tr');
-    row && (row.classList.remove('ping'), void row.offsetWidth, row.classList.add('ping'));
-    showToast(() => t().sent(n));
-  }));
-  $$('.dx-chk').forEach(b => b.addEventListener('click', () => {
-    const on = b.getAttribute('aria-pressed') !== 'true';
-    b.setAttribute('aria-pressed', on);
+    const row = b.closest('tr'), z = row.dataset.zone, mode = row.querySelector('select').value;
+    row.classList.remove('ping'); void row.offsetWidth; row.classList.add('ping');
+    showToast(() => mode === 'none' ? t().nosig(t().zones[z]) : t().sent(t().zones[z], t().modes[mode]));
   }));
   $('#dxExport').addEventListener('click', () => showToast(() => t().exp));
   select(cur);
 
   return {
-    refresh(){ select(cur); if (lastToast && toast.classList.contains('on')) toast.textContent = lastToast(); },
-    // appelé quand le faisceau 3D se verrouille : le signal anonyme « arrive » sur le poste
+    refresh(){ select(cur); if (lastToast && toast.classList.contains('on')) $('#dxToastTxt').textContent = lastToast(); },
+    // appelé quand l'impulsion 3D part vers l'écran : le signal anonyme « arrive » sur le poste
     pulse(){
-      const p = pins.find(x => x.dataset.cam === 'c1');
+      const p = cams.find(x => x.dataset.cam === 'c2');
       if (p){ p.classList.remove('hit'); void p.getBoundingClientRect(); p.classList.add('hit'); }
       showToast(() => t().recv, 'alert');
     }
