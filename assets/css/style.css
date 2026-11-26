@@ -322,11 +322,6 @@ body.ready .act.on .hero-c .act-h .w>span{transform:none}
 .a3 .act-h{font-size:clamp(2.3rem,3.9vw,3.8rem)}
 .station{position:absolute;right:calc(var(--gx) * .95);top:50%;width:min(50vw,880px,calc((100vh - 230px) * 1.5));margin-top:var(--nav);translate:0 -52%;
   transform-origin:100% 50%;transform:perspective(1700px) scale(1.18);will-change:transform;opacity:0;transition:opacity .8s var(--ease)}
-.a3.on .station{opacity:1}
-.st-halo{position:absolute;inset:-14% -10% -6%;background:radial-gradient(60% 55% at 50% 44%,rgba(110,170,255,.16),rgba(34,211,238,.05) 45%,transparent 72%);z-index:-1;pointer-events:none}
-
-.st-tag{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:2px;font-size:12px;color:var(--mut)}
-.st-tag i{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
 
 /* tableau de bord : tout est dimensionné en em par rapport à la largeur de l'écran */
 .dx{--c:#F5F5F7;position:absolute;inset:0;display:flex;font-size:clamp(7.6px,1.72cqw,14px);line-height:1.3;color:#e7e7ea;text-align:left}
@@ -411,7 +406,7 @@ body.ready .act.on .hero-c .act-h .w>span{transform:none}
   
   
   
-  .st-tag{font-size:10.5px}
+  
   .dx{font-size:clamp(9px,2.9cqw,13px)}
   .dx-top p:first-child span{display:none}
   .dx-main{padding:.8em;gap:.6em}
@@ -425,7 +420,7 @@ body.ready .act.on .hero-c .act-h .w>span{transform:none}
   .proto-g{grid-template-columns:1fr}
   .cine{font-size:0;padding:6px 10px}.cine::before{content:"▶";font-size:11px}
 }
-@media (prefers-reduced-motion:reduce){#depth span,.station{transition:none}}
+@media (prefers-reduced-motion:reduce){#depth span{transition:none}}
 
 /* ---------- v7 : performances mesurées ---------- */
 .b-perf{grid-column:span 12}
@@ -490,8 +485,6 @@ body.ready .act.on .hero-c .act-h .w>span{transform:none}
 #a3Link{position:absolute;left:0;top:0;width:100vw;height:100vh;pointer-events:none;z-index:2}
 
 /* ---------- v8 : Studio Display ---------- */
-
-.st-halo{background:radial-gradient(58% 52% at 50% 46%,rgba(115,170,255,.19),rgba(41,182,246,.06) 46%,transparent 72%)}
 
 /* ---------- v8 : onglets pleins, notification sous les barres ---------- */
 
@@ -621,11 +614,6 @@ body.ready .act.on .hero-c .act-h .w>span{transform:none}
 }
 
 /* ---------- fenêtre verre flottante (visionOS), sans cadre ni pied ---------- */
-.glass-win{position:relative;border-radius:20px;overflow:hidden;background:rgba(18,20,26,.84);border:1px solid rgba(255,255,255,.10);
-  -webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 30px 80px rgba(0,0,0,.55)}
-.screen{position:relative;aspect-ratio:16/10;container-type:inline-size}
-.screen::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(118deg,rgba(255,255,255,.045),transparent 32%)}
-.st-tag{margin-top:16px}
 
 /* barre latérale à icônes */
 .dx-rail{width:3.8em;flex:none;display:flex;flex-direction:column;align-items:center;gap:.7em;padding:1.1em 0;background:rgba(255,255,255,.025);border-right:1px solid rgba(255,255,255,.07)}
@@ -668,9 +656,9 @@ body.ready .act.on .hero-c .act-h .w>span{transform:none}
 .dx-zero svg{flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 
 @media (max-width:900px){
-  .glass-win{border-radius:16px}
-  .screen{aspect-ratio:1/1.02}
-  .st-tag{font-size:10.5px;margin-top:8px}
+  
+  
+  
   .dx-rail{display:none}
   .dx-brand>span{display:none}
   .dx-demo{font-size:.72em}
@@ -686,10 +674,54 @@ body.ready .act.on .hero-c .act-h .w>span{transform:none}
 .logo em{letter-spacing:.32em;color:#86868B}
 
 /* ---------- liaison horizontale : pilule compacte, fenêtre un peu plus étroite pour lui laisser sa place ---------- */
-.station{width:min(47vw,860px,calc((100vh - 230px) * 1.5))}
+
 .packet{gap:9px;padding:7px 14px 7px 12px;border-radius:14px;line-height:1.25}
 .packet>span{display:flex;flex-direction:column}
 .packet b{font-size:11.5px;font-weight:600}
 .packet small{font-size:10.5px;color:#a1a1a6}
 .dx-state>div{padding:.42em 0}
-@media (max-width:900px){.station{width:auto}}
+
+
+/* ---------- Studio Display : liseré aluminium, dalle bord à bord, pied incliné et plateau ---------- */
+.station{width:min(47vw,860px,calc((100vh - 270px) * 1.5))}
+.st-halo{position:absolute;inset:-16% -12% -4%;z-index:-1;pointer-events:none;
+  background:radial-gradient(56% 50% at 50% 40%,rgba(120,165,255,.22),rgba(70,110,200,.07) 48%,transparent 73%)}
+.glass-win{position:relative;padding:2px;border-radius:19px;
+  background:linear-gradient(168deg,#e9ebef 0%,#8b8e95 9%,#4b4d53 34%,#33353a 68%,#6d7077 90%,#b9bcc3 100%);
+  box-shadow:0 0 0 .5px rgba(0,0,0,.9),0 2px 3px rgba(0,0,0,.5),0 38px 70px -12px rgba(0,0,0,.8),0 0 90px rgba(80,130,230,.12)}
+.glass-win::before{content:"";position:absolute;inset:2px;border-radius:17px;background:#030304;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+.glass-win::after{content:"";position:absolute;left:50%;top:5px;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#3b4a63,#0b0e14 60%);box-shadow:0 0 0 1px rgba(255,255,255,.07)}
+.screen{position:relative;margin:12px;aspect-ratio:16/10;border-radius:6px;overflow:hidden;container-type:inline-size;
+  background:linear-gradient(180deg,#14161c,#0e1015)}
+.screen::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(116deg,rgba(255,255,255,.07) 0%,rgba(255,255,255,.018) 24%,transparent 24.5%)}
+
+/* pied : plaque d'aluminium qui s'affine, puis semelle plate vue en légère plongée */
+.sd-stand{position:relative;height:calc(clamp(40px,6.4vh,64px) + 17px);z-index:-1}
+.sd-neck{position:absolute;left:50%;top:-6px;width:19%;height:calc(100% - 7px);transform:translateX(-50%);
+  clip-path:polygon(0 0,100% 0,94% 100%,6% 100%);
+  background:linear-gradient(180deg,rgba(0,0,0,.72) 0%,rgba(0,0,0,.12) 38%,transparent 62%,rgba(255,255,255,.1) 100%),
+    linear-gradient(90deg,#4a4d53 0%,#a9adb5 14%,#d3d6dc 31%,#9a9ea6 52%,#c6c9d0 73%,#8a8e96 87%,#3f4248 100%)}
+.sd-top{position:absolute;left:50%;bottom:3px;width:31%;height:11px;transform:translateX(-50%);
+  clip-path:polygon(7% 0,93% 0,100% 100%,0 100%);
+  background:linear-gradient(180deg,#5d6067 0%,#a4a8b0 60%,#d6d9df 100%)}
+.sd-edge{position:absolute;left:50%;bottom:0;width:31%;height:3.5px;transform:translateX(-50%);border-radius:0 0 4px 4px;
+  background:linear-gradient(90deg,#4b4e54,#eef0f4 28%,#b4b8c0 55%,#e2e4e9 78%,#4b4e54);
+  box-shadow:0 6px 10px rgba(0,0,0,.75),0 16px 34px rgba(0,0,0,.6)}
+/* plateau : reflet de la dalle et ombre de contact */
+.sd-stand::after{content:"";position:absolute;left:-12%;right:-12%;bottom:-34px;height:44px;z-index:-1;border-radius:50%;
+  background:radial-gradient(18% 34% at 50% 28%,rgba(0,0,0,.85),transparent 72%),radial-gradient(50% 50% at 50% 42%,rgba(125,175,255,.2),rgba(60,90,150,.07) 55%,transparent 76%)}
+.st-tag{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:20px;font-size:12px;color:var(--mut)}
+.st-tag i{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+
+@media (max-width:900px){
+  .station{width:auto}
+  .glass-win{border-radius:14px}.glass-win::before{border-radius:12px}
+  .glass-win::after{top:3.5px;width:3px;height:3px;margin-left:-1.5px}
+  .screen{margin:7px;aspect-ratio:1/1.02;border-radius:5px}
+  .sd-stand{height:26px}.sd-top{height:6px}.sd-edge{height:2.5px}
+  .sd-stand::after{bottom:-18px;height:26px}
+  .st-tag{font-size:10.5px;margin-top:10px}
+}
+.a3.on .station{opacity:1}
+@media (prefers-reduced-motion:reduce){.station{transition:none}}
